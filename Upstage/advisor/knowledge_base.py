@@ -44,13 +44,27 @@ def _sanitize_renames(rmap):
             out[new] = goods
     return out
 
-DIR = os.path.dirname(os.path.abspath(__file__))   # 이 파일(advisor/) 위치
-ROOT = os.path.dirname(DIR)                          # 프로젝트 루트
-SCHED_DIR = os.path.join(ROOT, "data", "강의시간표")   # 연도별 강의시간표 xlsx 모음 (2019~2026)
-CUR_XLSX = SCHED_DIR + r"\2026-1학기 강의시간표(한국어)_20260212.xlsx"
-OLD_XLSX = SCHED_DIR + r"\2025-2 강의시간표 (한국어)_20250831.xlsx"
-RENAME_JSON = os.path.join(ROOT, "cache", "poc_cache", "course_renames.json")
+DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(DIR)
 
+SCHED_DIR = os.path.join(ROOT, "data", "강의시간표")
+
+CUR_XLSX = os.path.join(
+    SCHED_DIR,
+    "2026-1학기 강의시간표(한국어)_20260212.xlsx"
+)
+
+OLD_XLSX = os.path.join(
+    SCHED_DIR,
+    "2025-2 강의시간표 (한국어)_20250831.xlsx"
+)
+
+RENAME_JSON = os.path.join(
+    ROOT,
+    "cache",
+    "poc_cache",
+    "course_renames.json"
+)
 # 수강편람 "입학년도별 교과과정"에서 정리 (출처: 2026-1 수강편람 p.34/p.51)
 GRAD_REQ = {
     "2022": {
