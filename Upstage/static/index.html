@@ -1,0 +1,3670 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CourseMate | 세종대 수강편람 도우미</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+<style>
+  :root {
+    --crimson: #A6192E;
+    --crimson-dark: #7D1322;
+    --crimson-soft: #F7E6E9;
+    --ink: #1C1B1F;
+    --paper: #FAF9F7;
+    --line: #E7E3DE;
+    --muted: #6B6763;
+    --gold: #C79A3D;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  /* ── 상단 네비게이션 ── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    padding: 16px 32px;
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .brand {
+    font-weight: 800;
+    font-size: 19px;
+    letter-spacing: -0.02em;
+    color: var(--crimson);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .brand img { height: 26px; width: auto; display: block; }
+
+  nav { display: flex; gap: 28px; }
+
+  nav button {
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    padding: 4px 2px;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.15s;
+  }
+
+  nav button:hover { color: var(--crimson); }
+  nav button.active { color: var(--crimson); }
+  nav button.active::after {
+    content: "";
+    position: absolute; left: 0; right: 0; bottom: -18px;
+    height: 2px; background: var(--crimson);
+  }
+
+  /* ── 화면 전환 (뷰) ── */
+  main { max-width: 1480px; margin: 0 auto; padding: 32px; }
+  .view { display: none; }
+  .view.active { display: block; animation: fadeIn 0.25s ease; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .view h1 {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+  .view .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+
+  /* ── 홈 뷰 ── */
+  .hero-split {
+    display: flex; align-items: center; gap: 64px;
+    padding: 56px 0 44px; text-align: left;
+  }
+  .hero-left { flex: 1.05; min-width: 0; }
+  .hero-title {
+    font-size: 40px; font-weight: 800; letter-spacing: -0.03em;
+    color: var(--crimson); margin: 0 0 18px;
+  }
+  .hero-tagline {
+    font-size: 24px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.4;
+    color: var(--ink); margin: 0 0 18px;
+  }
+  .hero-desc {
+    font-size: 15px; line-height: 1.75; color: #4a4742;
+    max-width: 440px; margin: 0;
+  }
+  .hero-note { text-align: center; font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+
+  /* 히어로 오른쪽: 실제 학생 질문이 흘러가는 카드 */
+  .hero-right {
+    flex: 1; display: flex; justify-content: center;
+  }
+  .hero-questions-card {
+    width: 100%; max-width: 380px; height: 380px;
+    background: #fff; border: 1px solid var(--line);
+    border-radius: 20px; box-shadow: 0 12px 32px rgba(0,0,0,0.07);
+    overflow: hidden; position: relative;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 10%, #000 90%, transparent);
+    mask-image: linear-gradient(to bottom, transparent, #000 10%, #000 90%, transparent);
+  }
+  .hero-questions-track {
+    display: flex; flex-direction: column; gap: 12px; padding: 20px;
+    animation: hero-questions-scroll 26s linear infinite;
+  }
+  .hero-questions-card:hover .hero-questions-track { animation-play-state: paused; }
+  @keyframes hero-questions-scroll {
+    from { transform: translateY(0); }
+    to { transform: translateY(-50%); }
+  }
+  .hero-question-pill {
+    align-self: flex-end; max-width: 92%;
+    background: var(--crimson); color: #fff; font-size: 13px; font-weight: 600; line-height: 1.55;
+    border-radius: 14px; padding: 10px 14px;
+  }
+
+  @media (max-width: 720px) {
+    .hero-split { flex-direction: column; text-align: center; padding: 40px 0 28px; gap: 32px; }
+    .hero-left { text-align: center; }
+    .hero-desc { margin: 0 auto; }
+    .hero-right { width: 100%; }
+    .hero-questions-card { max-width: 320px; height: 320px; }
+  }
+
+  .feature-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 12px 0 28px;
+  }
+  .feature-card {
+    background: #fff; border: 1px solid var(--line); border-radius: 16px;
+    padding: 28px; transition: box-shadow 0.15s, transform 0.15s;
+  }
+  .feature-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.06); transform: translateY(-2px); }
+  .feature-icon { font-size: 28px; margin-bottom: 10px; }
+  .feature-card h3 { margin: 0 0 8px; font-size: 17px; }
+  .feature-card p { margin: 0; font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+
+  /* ── 기능 쇼케이스 캐러셀 ── */
+  .showcase-carousel {
+    position: relative; overflow: hidden; border-top: 1px solid var(--line);
+  }
+  .showcase-track {
+    display: flex; align-items: stretch;
+    transition: transform 0.55s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  .showcase-dots {
+    display: flex; justify-content: center; gap: 8px; padding: 4px 0 32px;
+  }
+  .showcase-dot {
+    width: 8px; height: 8px; border-radius: 50%; border: none; padding: 0;
+    background: var(--line); cursor: pointer; transition: background 0.2s, width 0.2s;
+  }
+  .showcase-dot.active { background: var(--crimson); width: 22px; border-radius: 4px; }
+
+  /* ── 기능 쇼케이스 섹션 ── */
+  .showcase {
+    flex: 0 0 100%; min-width: 0;
+    display: flex; align-items: center; gap: 48px;
+    padding: 48px 0;
+  }
+  .showcase.reverse { flex-direction: row-reverse; }
+  .showcase-text { flex: 1; }
+  .showcase-preview { flex: 1; display: flex; justify-content: center; }
+
+  .showcase-eyebrow {
+    display: inline-block; font-size: 12.5px; font-weight: 700; color: var(--crimson);
+    background: var(--crimson-soft); padding: 4px 12px; border-radius: 20px; margin-bottom: 14px;
+  }
+  .showcase-text h2 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 12px; }
+  .showcase-text p { font-size: 14.5px; line-height: 1.7; color: #3a3835; margin: 0 0 20px; }
+
+  .cta-btn {
+    background: var(--crimson); color: #fff; border: none; border-radius: 10px;
+    padding: 11px 20px; font-family: inherit; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .cta-btn:hover { background: var(--crimson-dark); }
+
+  .badge-soon {
+    display: inline-block; font-size: 12.5px; font-weight: 700; color: var(--muted);
+    background: #EFEDE9; padding: 6px 14px; border-radius: 20px;
+  }
+
+  /* 목업 미리보기 카드 */
+  .showcase-preview > div {
+    width: 100%; max-width: 340px; background: #fff; border: 1px solid var(--line);
+    border-radius: 16px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+  }
+
+  .mock-chat { display: flex; flex-direction: column; gap: 10px; }
+  .mock-msg { padding: 9px 12px; border-radius: 12px; font-size: 12.5px; line-height: 1.5; }
+  .mock-msg.user { align-self: flex-end; background: var(--crimson); color: #fff; max-width: 80%; }
+  .mock-msg.bot { background: #F1EFEC; }
+  .mock-source { font-size: 10px; color: var(--muted); }
+
+  .mock-roadmap { display: flex; flex-direction: column; gap: 8px; }
+  .mock-course {
+    border-radius: 6px; background: #FAFAF8;
+    padding: 8px 10px; font-size: 13px; display: flex; justify-content: space-between;
+  }
+  .mock-course span { font-size: 11px; color: var(--muted); }
+
+  .mock-calendar {
+    text-align: center; padding: 40px 0; color: var(--muted); font-size: 14px;
+  }
+
+  /* ── FAQ 섹션 ── */
+  .faq-section { padding: 44px 0 24px; border-top: 1px solid var(--line); }
+  .faq-title {
+    font-size: 22px; font-weight: 800; letter-spacing: -0.02em;
+    text-align: center; margin: 0 0 24px;
+  }
+  .faq-list { max-width: 720px; margin: 0 auto; }
+  .faq-item {
+    border-bottom: 1px solid var(--line);
+  }
+  .faq-question {
+    width: 100%; text-align: left; background: none; border: none; cursor: pointer;
+    font-family: inherit; font-size: 15px; font-weight: 700; color: var(--ink);
+    padding: 16px 4px; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  }
+  .faq-question .faq-icon {
+    color: var(--crimson); font-size: 18px; flex-shrink: 0; transition: transform 0.2s;
+  }
+  .faq-item.open .faq-question .faq-icon { transform: rotate(45deg); }
+  .faq-answer {
+    max-height: 0; overflow: hidden; transition: max-height 0.25s ease;
+  }
+  .faq-item.open .faq-answer { max-height: 300px; }
+  .faq-answer p {
+    font-size: 13.5px; line-height: 1.7; color: #4a4742; padding: 0 4px 18px;
+    margin: 0;
+  }
+  .mock-manual {
+    text-align: center; padding: 20px 0;
+  }
+  .mock-manual-page {
+    font-size: 48px; margin-bottom: 10px;
+  }
+  .mock-manual-label { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .mock-calendar-dday {
+    text-align: center; padding: 20px 0;
+  }
+  .mini-dday {
+    display: inline-block; font-size: 32px; font-weight: 800; color: var(--crimson);
+    background: var(--crimson-soft); border-radius: 12px; padding: 10px 24px; margin-bottom: 10px;
+  }
+  .mini-dday-label { font-size: 14px; font-weight: 600; color: var(--ink); }
+
+  /* ── 이수체계도 뷰 ── */
+  .selector-row {
+    display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
+  }
+  select {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: #fff;
+    min-width: 180px;
+  }
+
+  .legend { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .legend-item {
+    font-size: 12px; padding: 3px 10px; border-radius: 6px;
+    font-weight: 600;
+  }
+
+  .roadmap-full-bleed {
+    width: 100vw; position: relative; left: 50%; right: 50%;
+    margin-left: -50vw; margin-right: -50vw;
+    padding: 0 24px;
+  }
+  .roadmap-grid {
+    display: grid; gap: 8px; align-items: start;
+  }
+  .sem-col { min-width: 0; }
+  .sem-label {
+    font-weight: 700; text-align: center; margin-bottom: 8px;
+    white-space: pre-line; font-size: 12.5px; color: var(--muted);
+  }
+  .course-card {
+    border-radius: 6px; padding: 7px 8px;
+    margin-bottom: 6px; font-size: 11.5px; background: #fff;
+    cursor: pointer; transition: transform 0.1s, box-shadow 0.1s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    word-break: keep-all; line-height: 1.35;
+  }
+  .course-card:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,0.08); }
+  .course-card .cat { font-size: 10px; opacity: 0.65; display:block; margin-top:2px; }
+
+  .empty-state {
+    text-align: center; padding: 60px 20px; color: var(--muted);
+  }
+
+  /* ── 시간표 꿀팁 배너 (자동 롤링) — subtitle 옆, 아래 결과 컬럼과 같은 폭 ── */
+  .tt-sub-row { display: flex; align-items: center; gap: 28px; margin-bottom: 20px; }
+  .tt-sub-row .subtitle { flex: 0 0 380px; max-width: 380px; margin-bottom: 0; }
+  .tt-tips {
+    flex: 1; min-width: 0;
+    display: flex; align-items: center; gap: 14px;
+    background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 8px 14px;
+  }
+  .tt-tips-label {
+    flex: none; font-weight: 700; font-size: 12px; color: var(--crimson);
+    background: var(--crimson-soft); border-radius: 8px; padding: 5px 10px; white-space: nowrap;
+  }
+  .tt-tips-view { flex: 1; min-width: 0; height: 40px; overflow: hidden; display: flex; align-items: center; }
+  .tt-tips-text {
+    margin: 0; font-size: 13px; line-height: 1.4; color: #333; transition: opacity 0.22s;
+    display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .tt-tips-nav { flex: none; display: flex; flex-direction: column; gap: 2px; }
+  .tt-tips-nav button {
+    border: none; background: none; cursor: pointer; color: var(--muted); font-size: 11px; line-height: 1; padding: 2px 4px;
+  }
+  .tt-tips-nav button:hover { color: var(--crimson); }
+
+  /* ── 과목 캡슐 뽑기 ── */
+  #capsule-wrap { position: fixed; bottom: 26px; right: 26px; z-index: 996; }
+  #capsule-btn {
+    width: 64px; height: 64px; border-radius: 50%; cursor: pointer; padding: 0;
+    background: #fff; border: 1px solid var(--line);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.18); display: flex; align-items: center; justify-content: center;
+  }
+  .capsule-ico { height: 42px; width: auto; display: block; }
+  #capsule-btn:hover { animation: capsule-shake 0.55s ease-in-out infinite; }
+  @keyframes capsule-shake {
+    0%, 100% { transform: rotate(0deg) scale(1.08); }
+    25% { transform: rotate(-8deg) scale(1.08); }
+    75% { transform: rotate(8deg) scale(1.08); }
+  }
+  /* 마우스 올리면 뜨는 말풍선 */
+  .capsule-tip {
+    position: absolute; bottom: 76px; right: 0; width: 216px;
+    background: #2b2b30; color: #fff; font-size: 12.5px; line-height: 1.5; font-weight: 600;
+    padding: 11px 14px; border-radius: 12px; box-shadow: 0 8px 22px rgba(0,0,0,0.28);
+    opacity: 0; transform: translateY(6px); pointer-events: none; transition: opacity 0.2s, transform 0.2s;
+  }
+  .capsule-tip b { color: var(--gold); }
+  .capsule-tip::after {
+    content: ''; position: absolute; bottom: -6px; right: 28px;
+    border: 6px solid transparent; border-top-color: #2b2b30; border-bottom: 0;
+  }
+  #capsule-wrap:hover .capsule-tip { opacity: 1; transform: translateY(0); }
+  .capsule-backdrop {
+    display: none; position: fixed; inset: 0; background: rgba(28,27,31,0.4);
+    z-index: 1001; align-items: center; justify-content: center;
+  }
+  .capsule-card {
+    position: relative; width: 780px; max-width: 94vw; max-height: 88vh; overflow-y: auto; overflow-x: hidden;
+    background: #fff; border-radius: 18px; box-shadow: 0 24px 70px rgba(0,0,0,0.3); padding: 26px 32px;
+  }
+  .capsule-x { position: absolute; top: 14px; right: 16px; border: none; background: none;
+    font-size: 20px; color: var(--muted); cursor: pointer; }
+  .capsule-title { font-size: 19px; font-weight: 800; color: var(--crimson-dark); }
+  .capsule-sub { font-size: 12.5px; color: var(--muted); margin: 4px 0 16px; }
+  .capsule-form { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .capsule-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; font-weight: 700; color: #444; min-width: 0; }
+  .capsule-form select { width: 100%; min-width: 0; box-sizing: border-box; padding: 8px 10px;
+    border: 1px solid var(--line); border-radius: 8px; font-size: 13px; cursor: pointer; }
+  .capsule-btns { display: flex; gap: 10px; margin-top: 18px; }
+  .capsule-rand { flex: 1; padding: 11px; border: 1px solid var(--line); background: #fff; color: #555;
+    border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; }
+  .capsule-rand:hover { border-color: var(--crimson); color: var(--crimson); }
+  .capsule-draw { flex: 1; padding: 11px; border: none; background: var(--crimson); color: #fff;
+    border-radius: 10px; font-weight: 800; font-size: 14px; cursor: pointer; }
+  .capsule-rolling, .capsule-none { text-align: center; padding: 20px; color: var(--muted); font-size: 14px; }
+  .capsule-result { margin-top: 16px; }
+  .capsule-hit { border: 1px solid var(--gold); background: #FFFDF6; border-radius: 14px; padding: 16px; text-align: center; }
+  .capsule-hit-name { font-size: 18px; font-weight: 800; color: var(--crimson-dark); margin-bottom: 8px; }
+  .capsule-hit-tags { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-bottom: 10px; }
+  .capsule-hit-tags span { background: var(--crimson-soft); color: var(--crimson-dark); border-radius: 10px;
+    padding: 2px 9px; font-size: 11.5px; font-weight: 700; }
+  .capsule-explain { font-size: 13px; line-height: 1.6; color: #333; text-align: left; margin-bottom: 8px; }
+  .capsule-disc { font-size: 11px; color: var(--muted); text-align: left; margin-bottom: 12px; }
+  .capsule-again { padding: 9px 18px; border: none; background: var(--crimson); color: #fff;
+    border-radius: 9px; font-weight: 700; font-size: 13px; cursor: pointer; }
+
+  /* 뽑기 결과 리빌 (페이드 인 + 빵빠레) */
+  .capsule-reveal {
+    display: none; position: fixed; inset: 0; z-index: 1003; align-items: center; justify-content: center;
+    background: rgba(28,27,31,0.5); opacity: 0; transition: opacity 0.3s;
+  }
+  .capsule-reveal.show { opacity: 1; }
+  .capsule-reveal-card {
+    position: relative; width: 460px; max-width: 92vw; max-height: 88vh; overflow-y: auto;
+    background: #fff; border-radius: 20px; box-shadow: 0 24px 70px rgba(0,0,0,0.32); padding: 30px;
+    text-align: center; transform: scale(0.9) translateY(8px); transition: transform 0.3s;
+  }
+  .capsule-reveal.show .capsule-reveal-card { transform: scale(1) translateY(0); }
+  .capsule-confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .confetti-piece {
+    position: absolute; top: -12px; width: 8px; height: 13px; border-radius: 2px; opacity: 0;
+    animation: confetti-fall 1.9s ease-in forwards;
+  }
+  @keyframes confetti-fall {
+    0% { opacity: 1; top: -12px; transform: translateX(0) rotate(0deg); }
+    100% { opacity: 0.2; top: 105%; transform: translateX(24px) rotate(540deg); }
+  }
+  .capsule-reveal .capsule-explain, .capsule-reveal .capsule-disc { text-align: center; }
+  .capsule-ok {
+    margin-top: 6px; padding: 11px 32px; border: none; background: var(--crimson); color: #fff;
+    border-radius: 10px; font-weight: 800; font-size: 14px; cursor: pointer;
+  }
+  .capsule-ok:hover { filter: brightness(1.05); }
+
+  /* ── 뽑기 연출 스테이지 (캡슐 기계) ── */
+  .gacha-stage {
+    display: none; position: fixed; inset: 0; z-index: 1002; flex-direction: column;
+    align-items: center; justify-content: center; cursor: pointer;
+    background: rgba(20,18,22,0.55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .gacha-stage.show { opacity: 1; }
+  .gacha-machine { position: relative; width: 250px; filter: drop-shadow(0 18px 40px rgba(0,0,0,0.4)); transition: opacity 0.4s, transform 0.4s; }
+  .gacha-machine.dim { opacity: 0.3; transform: scale(0.92); filter: blur(2px); }
+  .gm-img { width: 100%; height: auto; display: block; }
+  /* 돔 안에서 실제로 움직이는 캡슐들 — 유리돔 내부 모양대로 잘라냄(clip-path) */
+  .gm-caps {
+    position: absolute; inset: 0;
+    clip-path: polygon(6.7% 9.4%, 5.0% 12.6%, 3.9% 15.8%, 3.2% 19.1%, 2.7% 22.3%, 2.4% 25.5%, 2.3% 28.8%, 2.4% 32.0%, 2.7% 35.3%, 3.4% 38.5%, 4.4% 41.7%, 6.0% 45.0%, 8.7% 48.2%, 13.1% 51.4%, 84.7% 51.4%, 89.1% 48.2%, 91.8% 45.0%, 93.4% 41.7%, 94.4% 38.5%, 95.0% 35.3%, 95.3% 32.0%, 95.4% 28.8%, 95.3% 25.5%, 95.0% 22.3%, 94.6% 19.1%, 93.8% 15.8%, 92.7% 12.6%, 91.1% 9.4%);
+  }
+  .gm-cap {
+    position: absolute; border-radius: 50%; box-sizing: border-box; border: 2px solid #6D0F1F;
+    transition: transform 0.5s cubic-bezier(.35,1.2,.5,1), opacity 0.45s; will-change: transform;
+  }
+
+  /* 배출구에서 나와 중앙으로 이동하는 캡슐 — 위(빨강)/아래(흰) 반쪽 분리형 */
+  .gacha-capsule {
+    position: absolute; top: 50%; left: 50%; width: 96px; height: 96px; margin: -48px 0 0 -48px;
+    opacity: 0; filter: drop-shadow(0 12px 30px rgba(0,0,0,0.35));
+  }
+  .gc-top, .gc-bot {
+    position: absolute; left: 0; width: 96px; height: 48px; box-sizing: border-box;
+    border: 4px solid #6D0F1F;
+    transition: transform 0.75s cubic-bezier(.3,1.35,.45,1), opacity 0.45s ease 0.4s;
+  }
+  .gc-top { top: 0; border-radius: 96px 96px 0 0; border-bottom-width: 2px;
+    background: linear-gradient(180deg, #DB5B72, #C92D44); }
+  .gc-bot { top: 48px; border-radius: 0 0 96px 96px; border-top-width: 2px; background: #fff; }
+  .gc-glow {
+    position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px;
+    border-radius: 50%; opacity: 0; transform: scale(0.2); pointer-events: none;
+    background: radial-gradient(circle, #fff 0%, #FFE9A8 38%, rgba(255,214,120,0) 72%);
+  }
+  /* 배출구(--sx,--sy)에서 톡 튀어나온 뒤 중앙으로 커지며 이동 */
+  .gacha-capsule.show { animation: gacha-out 1.15s cubic-bezier(.3,1.15,.45,1) forwards; }
+  @keyframes gacha-out {
+    0%   { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(0.22); }
+    16%  { opacity: 1; transform: translate(var(--sx), calc(var(--sy) + 12px)) scale(0.3); }
+    34%  { opacity: 1; transform: translate(var(--sx), calc(var(--sy) + 10px)) scale(0.3); }
+    100% { opacity: 1; transform: translate(0, 0) scale(1); }
+  }
+  /* 열림: 위아래 반쪽이 서서히 벌어지고 가운데서 빛이 터짐 */
+  .gacha-capsule.open .gc-top { transform: translateY(-56px) rotate(-12deg); opacity: 0; }
+  .gacha-capsule.open .gc-bot { transform: translateY(56px) rotate(10deg); opacity: 0; }
+  .gacha-capsule.open .gc-glow { animation: gc-glow-burst 0.9s ease-out forwards; }
+  @keyframes gc-glow-burst {
+    0%   { opacity: 0; transform: scale(0.2); }
+    25%  { opacity: 1; transform: scale(1.8); }
+    60%  { opacity: 1; transform: scale(4.4); }
+    100% { opacity: 0; transform: scale(6.2); }
+  }
+  .gacha-hint {
+    position: absolute; bottom: 15%; color: #fff; font-size: 15px; font-weight: 800;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5); opacity: 0; transition: opacity 0.3s;
+    animation: gacha-hint-pulse 1.1s ease-in-out infinite;
+  }
+  .gacha-hint.show { opacity: 1; }
+  @keyframes gacha-hint-pulse { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  .gacha-spark {
+    position: absolute; font-size: 24px; opacity: 0; pointer-events: none;
+    animation: gacha-spark-anim 0.85s ease-out forwards;
+  }
+  @keyframes gacha-spark-anim {
+    0% { opacity: 0; transform: scale(0.3); }
+    40% { opacity: 1; transform: scale(1.2); }
+    100% { opacity: 0; transform: scale(1.6) translateY(-14px); }
+  }
+
+  /* ── 학사일정 뷰 ── */
+  #dday-widget {
+    overflow: hidden; margin-bottom: 32px;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent);
+    mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent);
+  }
+  .dday-track {
+    display: flex; gap: 12px; width: max-content;
+    animation: dday-scroll 30s linear infinite;
+  }
+  #dday-widget:hover .dday-track { animation-play-state: paused; }
+  @keyframes dday-scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  .dday-card {
+    min-width: 200px; background: #fff; border: 1px solid var(--line); border-radius: 14px;
+    padding: 16px; flex-shrink: 0;
+  }
+  .dday-badge {
+    display: inline-block; font-size: 12px; font-weight: 800; color: #fff;
+    background: var(--crimson); border-radius: 6px; padding: 2px 8px; margin-bottom: 8px;
+  }
+  .dday-badge.today { background: var(--gold); }
+  .dday-event { font-size: 13.5px; font-weight: 700; margin-bottom: 4px; line-height: 1.4; }
+  .dday-date { font-size: 12px; color: var(--muted); }
+
+  .cal-month { margin-bottom: 28px; }
+  .cal-month h3 {
+    font-size: 15px; font-weight: 800; color: var(--crimson); margin: 0 0 10px;
+    padding-bottom: 6px; border-bottom: 2px solid var(--crimson-soft);
+  }
+  .cal-row { display: flex; gap: 14px; padding: 7px 0; font-size: 13.5px; border-bottom: 1px solid var(--line); }
+  .cal-row:last-child { border-bottom: none; }
+  .cal-date { min-width: 130px; color: var(--muted); flex-shrink: 0; }
+  .cal-event { color: var(--ink); }
+
+  .cal-toggle { display: flex; gap: 8px; margin-bottom: 20px; }
+  .cal-toggle-btn {
+    border: 1px solid var(--line); background: #fff; font-family: inherit;
+    font-size: 13px; font-weight: 600; padding: 7px 16px; border-radius: 20px; cursor: pointer;
+    color: var(--muted);
+  }
+  .cal-toggle-btn.active { background: var(--crimson); color: #fff; border-color: var(--crimson); }
+
+  .cal-nav {
+    display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 16px;
+  }
+  .cal-nav button {
+    border: none; background: var(--crimson-soft); color: var(--crimson-dark); width: 32px; height: 32px;
+    border-radius: 50%; cursor: pointer; font-size: 13px;
+  }
+  .cal-nav h3 { font-size: 17px; font-weight: 800; margin: 0; min-width: 130px; text-align: center; }
+
+  .cal-body {
+    display: flex; align-items: flex-start; gap: 32px;
+  }
+  .cal-grid-col { flex: 0 0 900px; max-width: 900px; min-width: 0; }
+  .cal-add-col {
+    flex: 1; min-width: 220px; background: #fff; border: 1px solid var(--line);
+    border-radius: 16px; padding: 20px; position: sticky; top: 20px;
+  }
+  .cal-add-title { font-size: 15px; font-weight: 800; margin: 0 0 14px; }
+  .cal-add-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 0; }
+  .cal-add-form input[type="text"] {
+    border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-family: inherit; font-size: 13px;
+  }
+  .cal-add-form button {
+    background: var(--ink); color: #fff; border: none; border-radius: 8px; padding: 10px 16px;
+    font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .cal-add-form button:disabled { opacity: 0.6; cursor: default; }
+
+  @media (max-width: 860px) {
+    .cal-body { flex-direction: column; }
+    .cal-grid-col { flex: 1 1 auto; max-width: 100%; }
+    .cal-add-col { width: 100%; position: static; }
+  }
+
+  .cal-grid-header {
+    display: grid; grid-template-columns: repeat(7, 1fr); text-align: center;
+    font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 4px;
+  }
+  .cal-grid-header .sun { color: #C6484D; }
+  .cal-grid-header .sat { color: #3F6FB8; }
+
+  .cal-week {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    grid-auto-rows: minmax(26px, auto);
+    border-top: 1px solid var(--line);
+    padding-top: 8px;
+    padding-bottom: 10px;
+  }
+  .cal-week.stripe { background: #F3F1ED; }
+  .cal-daynum {
+    grid-row: 1; font-size: 12px; font-weight: 700; color: var(--muted); padding: 2px 4px 8px;
+  }
+  .cal-daynum.sun { color: #C6484D; }
+  .cal-daynum.sat { color: #3F6FB8; }
+  .cal-daynum.holiday { color: #C6484D; }
+  .cal-daynum.today { box-shadow: inset 0 0 0 1.5px var(--crimson); border-radius: 5px; }
+
+  .cal-bar {
+    grid-row: span 1; margin: 2px 4px; border-radius: 5px; padding: 4px 8px;
+    font-size: 11px; font-weight: 600; line-height: 1.4; color: #fff;
+    white-space: normal; word-break: break-word; cursor: default;
+    display: flex; align-items: flex-start; gap: 4px;
+  }
+  .cal-bar-text { flex: 1; white-space: normal; word-break: break-word; }
+  .cal-bar-del {
+    flex-shrink: 0; cursor: pointer; opacity: 0.75; font-weight: 800; padding: 0 2px;
+  }
+  .cal-bar-del:hover { opacity: 1; }
+  .cal-bar.personal { background: #5DA391; }
+
+  .cal-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  .cal-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--muted); }
+  .cal-legend-dot { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+
+  #cal-long-events { margin-bottom: 20px; }
+  .cal-long-title { font-size: 12.5px; font-weight: 700; color: var(--muted); margin-bottom: 8px; }
+  .cal-long-box {
+    background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 4px 14px;
+  }
+  .cal-long-row {
+    display: flex; align-items: center; gap: 10px; font-size: 13px;
+    padding: 9px 0; border-bottom: 1px solid var(--line);
+  }
+  .cal-long-row:last-child { border-bottom: none; }
+  .cal-long-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .cal-long-name { font-weight: 700; flex: 1; }
+  .cal-long-range { color: var(--muted); font-size: 12px; }
+
+  /* ── 시간표 생성 뷰 ── */
+  .tt-layout { display: flex; gap: 28px; align-items: flex-start; }
+  .tt-form-col { flex: 0 0 380px; max-width: 380px; display: flex; flex-direction: column; gap: 16px; }
+  .tt-result-col { flex: 1; min-width: 0; }
+
+  .tt-card {
+    background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 18px;
+  }
+  .tt-card-flat { border: none; padding: 14px 0 0; }
+  .tt-card-title { font-size: 14px; font-weight: 800; margin: 0 0 12px; }
+  .tt-card-desc { font-size: 12.5px; color: var(--muted); margin: -6px 0 10px; }
+
+  /* 추천안(대안 시간표) 탭 */
+  .tt-alt-tabs { display: flex; gap: 8px; margin-bottom: 10px; }
+  .tt-alt-tab { padding: 7px 16px; border: 1px solid var(--line); background: #fff;
+                border-radius: 20px; cursor: pointer; font-weight: 700; font-size: 13px;
+                color: var(--muted); font-family: inherit; }
+  .tt-alt-tab.on { background: var(--crimson); border-color: var(--crimson); color: #fff; }
+  .tt-alt-hint { margin: -2px 0 12px; }
+
+  /* 강의계획서 세부 (과목 목록 접이식 행) */
+  .tt-detail-btn { padding: 4px 10px; border: 1px solid var(--line); background: #fff;
+                   border-radius: 14px; cursor: pointer; font-size: 12px; font-weight: 700;
+                   color: var(--crimson); font-family: inherit; white-space: nowrap; }
+  .tt-detail-btn:hover { background: var(--crimson-soft); }
+  .tt-detail-row td { background: var(--crimson-soft); }
+  .tt-detail-box {
+    padding: 4px 2px; font-size: 12.8px; line-height: 1.6;
+    max-width: 560px; white-space: normal; overflow-wrap: anywhere; word-break: break-word;
+  }
+  .tt-detail-box .tt-detail-line { white-space: normal; overflow-wrap: anywhere; }
+  .tt-detail-chips { margin-bottom: 6px; }
+  .tt-detail-chip { display: inline-block; background: #fff; border: 1px solid var(--line);
+                    border-radius: 12px; padding: 2px 10px; margin: 0 5px 4px 0;
+                    font-size: 12px; font-weight: 700; color: var(--ink); }
+  .tt-detail-chip.warn { border-color: var(--crimson); color: var(--crimson); }
+  .tt-detail-line { margin: 3px 0; }
+  .tt-detail-line b { color: var(--crimson-dark); margin-right: 6px; }
+
+  /* 자연어 조정 박스 */
+  .tt-nl-card { margin-bottom: 14px; }
+  .tt-nl-row { display: flex; gap: 8px; }
+  .tt-nl-row input { flex: 1; padding: 10px 12px; border: 1px solid var(--line);
+                     border-radius: 8px; font-size: 14px; font-family: inherit; }
+  .tt-nl-row input:focus { outline: none; border-color: var(--crimson); }
+  #tt-nl-status { margin-top: 8px; min-height: 16px; }
+
+  .tt-row { display: flex; gap: 10px; margin-bottom: 10px; }
+  .tt-row:last-child { margin-bottom: 0; }
+  .tt-field { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+  .tt-field-sm { flex: 0 0 88px; min-width: 0; }
+  .tt-field label { font-size: 12px; font-weight: 700; color: var(--muted); }
+  .tt-hint { font-weight: 500; color: var(--muted); font-size: 11px; }
+  .tt-field select, .tt-field input, .tt-field textarea {
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+    font-family: inherit; font-size: 13px; width: 100%; box-sizing: border-box;
+    min-width: 0; max-width: 100%;
+  }
+  .tt-field select {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .tt-field textarea { resize: vertical; }
+
+  .tt-tag-input-wrap { position: relative; margin-bottom: 10px; }
+  .tt-tag-input { display: flex; gap: 8px; }
+  .tt-suggest-list {
+    display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: #fff; border: 1px solid var(--line); border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12); max-height: 220px; overflow-y: auto;
+    z-index: 20;
+  }
+  .tt-suggest-item {
+    padding: 8px 12px; font-size: 13px; cursor: pointer;
+  }
+  .tt-suggest-item:hover { background: var(--crimson-soft); color: var(--crimson-dark); }
+  .tt-suggest-item + .tt-suggest-item { border-top: 1px solid var(--line); }
+  .tt-tag-input input {
+    flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+    font-family: inherit; font-size: 13px;
+  }
+  .tt-tag-input button {
+    background: var(--ink); color: #fff; border: none; border-radius: 8px; padding: 8px 14px;
+    font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  .tt-upload-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+    flex-wrap: nowrap; min-height: 36px; }
+  .tt-upload-btn { flex: none; }
+  #tt-upload-status { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tt-upload-btn {
+    background: var(--crimson-soft); color: var(--crimson-dark); border-radius: 20px;
+    padding: 7px 14px; font-size: 12.5px; font-weight: 700; cursor: pointer; display: inline-block;
+  }
+  .tt-upload-btn:hover { background: #F0D5DA; }
+  .tt-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tt-tag {
+    display: flex; align-items: center; gap: 6px; background: var(--crimson-soft);
+    color: var(--crimson-dark); font-size: 12.5px; font-weight: 600; border-radius: 20px; padding: 5px 12px;
+    cursor: pointer; transition: background 0.12s, opacity 0.12s;
+  }
+  .tt-tag:hover { background: var(--crimson); color: #fff; }
+  .tt-tag:hover .tt-tag-x { opacity: 1; }
+  .tt-tag .tt-tag-x { font-weight: 800; font-size: 13px; opacity: 0.55; }
+
+  /* 희망과목 태그: 몸통(교수·분반 지정) + × (제거) 분리 */
+  .tt-tag-want { cursor: default; }
+  .tt-tag-want:hover { background: var(--crimson-soft); color: var(--crimson-dark); }
+  .tt-tag-body { cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .tt-tag-badge {
+    background: #fff; color: var(--crimson); border: 1px solid var(--crimson);
+    border-radius: 10px; padding: 0 7px; font-size: 11px; font-weight: 700;
+  }
+  .tt-tag-want .tt-tag-x, .tt-tag-plain .tt-tag-x { cursor: pointer; padding-left: 2px; }
+  .tt-tag-want .tt-tag-x:hover, .tt-tag-plain .tt-tag-x:hover { opacity: 1; color: var(--crimson); }
+  /* 이수 과목 태그: 표시 전용(클릭 삭제 없음) */
+  .tt-tag-plain { cursor: default; }
+  .tt-tag-plain:hover { background: var(--crimson-soft); color: var(--crimson-dark); }
+  .tt-clear-taken {
+    margin-left: auto; padding: 5px 12px; border: 1px solid var(--line); background: #fff;
+    color: var(--muted); border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; flex: none;
+  }
+  .tt-clear-taken:hover { border-color: var(--crimson); color: var(--crimson); }
+
+  /* 교수·분반 지정 팝업 */
+  .tt-spec-backdrop {
+    position: fixed; inset: 0; background: rgba(28,27,31,0.35);
+    display: none; z-index: 999; align-items: center; justify-content: center;
+  }
+  .tt-spec-card {
+    width: 360px; max-width: 90vw; background: #fff; border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25); padding: 22px 24px;
+  }
+  .tt-spec-title { font-size: 16px; font-weight: 800; color: var(--crimson-dark); }
+  .tt-spec-sub { font-size: 12.5px; color: var(--muted); margin: 4px 0 14px; }
+  .tt-spec-row {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 13px; font-weight: 600;
+  }
+  .tt-spec-row > span { width: 34px; flex: none; color: #333; }
+  .tt-spec-row select {
+    flex: 1; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
+    font-size: 13px; background: #fff; cursor: pointer;
+  }
+  .tt-spec-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  .tt-spec-btns button {
+    padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;
+    border: 1px solid var(--line); background: #fff; color: #555;
+  }
+  .tt-spec-apply { background: var(--crimson) !important; color: #fff !important; border-color: var(--crimson) !important; }
+
+  .tt-copy-name {
+    font-weight: 700; text-decoration: underline; text-decoration-style: dotted;
+    text-underline-offset: 2px; cursor: pointer;
+  }
+  .tt-copy-name:hover { color: var(--crimson); text-decoration-style: solid; }
+  .tt-toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--crimson-dark); color: #fff; padding: 10px 18px; border-radius: 10px;
+    font-size: 13px; font-weight: 600; box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    opacity: 0; pointer-events: none; transition: opacity 0.18s, transform 0.18s; z-index: 1000;
+  }
+  .tt-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .tt-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .tt-chip {
+    background: var(--crimson-soft); color: var(--crimson-dark); border: none; border-radius: 16px;
+    padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.12s, color 0.12s;
+  }
+  .tt-chip:hover { background: var(--crimson); color: #fff; }
+
+  .tt-miss-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .tt-miss-chip {
+    background: #fff; color: var(--crimson-dark); border: 1px solid var(--crimson-soft); border-radius: 14px;
+    padding: 3px 9px; font-size: 11.5px; font-weight: 600; cursor: pointer; transition: background 0.12s, color 0.12s;
+  }
+  .tt-miss-chip:hover { background: var(--crimson); color: #fff; border-color: var(--crimson); }
+
+  /* 구분/요일 그룹: 첫 줄에만 라벨 표시 + 그룹 시작 구분선 (병합된 듯한 표) */
+  .tt-gubun-cell {
+    font-weight: 800; font-size: 12px; color: var(--crimson-dark);
+    vertical-align: middle; white-space: nowrap; background: #FBF7F5;
+    border-right: 1px solid var(--line); text-align: center;
+  }
+  .tt-gubun-sum { display: block; font-size: 10px; font-weight: 600; color: var(--muted); margin-top: 2px; }
+  .tt-grp-start > td { border-top: 2px solid var(--line); }
+  .tt-move-tag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: #E4F1EA; color: #3F9165; }
+  .tt-move-tag.bad { background: var(--crimson); color: #fff; }
+
+  .tt-advanced {
+    background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 18px;
+  }
+  .tt-advanced[open] summary { margin-bottom: 4px; }
+  .tt-advanced summary {
+    cursor: pointer; font-size: 13px; font-weight: 700; color: var(--crimson-dark);
+    padding: 4px 0;
+  }
+  .tt-checkrow { display: flex; flex-wrap: wrap; gap: 10px 16px; font-size: 13px; }
+  .tt-checkrow label { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+
+  .tt-adv-section {
+    padding: 14px 0; border-bottom: 1px solid var(--line);
+  }
+  .tt-adv-section:first-child { padding-top: 2px; }
+  .tt-adv-section-last { border-bottom: none; padding-bottom: 2px; }
+  .tt-adv-label {
+    display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 8px;
+  }
+
+  .tt-block-builder { display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px; }
+  .tt-block-time-row { display: flex; align-items: center; gap: 8px; }
+  .tt-block-time-row input[type="time"] {
+    border: 1px solid var(--line); border-radius: 8px; padding: 7px 8px;
+    font-family: inherit; font-size: 13px;
+  }
+  .tt-block-time-row .tt-ghost-btn { margin-left: auto; }
+
+  .tt-ghost-btn {
+    background: var(--crimson-soft); color: var(--crimson-dark); border: none; border-radius: 20px;
+    padding: 7px 14px; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
+    white-space: nowrap;
+  }
+  .tt-ghost-btn:hover { background: #F0D5DA; }
+
+  .tt-submit { width: 100%; text-align: center; }
+
+  .tt-error {
+    background: #FBEAEA; border: 1px solid #E7B9BC; color: var(--crimson-dark);
+    border-radius: 10px; padding: 14px; font-size: 13.5px;
+  }
+
+  .tt-metrics { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+  .tt-metric {
+    flex: 1; min-width: 110px; background: #fff; border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px 14px; text-align: center;
+  }
+  .tt-metric .num { font-size: 20px; font-weight: 800; color: var(--crimson); }
+  .tt-metric .label { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .tt-metric.bad .num { color: #C6484D; }
+
+  .tt-section-title { font-size: 14px; font-weight: 800; margin: 22px 0 10px; }
+  .tt-section-title:first-child { margin-top: 0; }
+
+  .tt-diag-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+  .tt-diag-card {
+    background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+  }
+  .tt-diag-card h4 { font-size: 12.5px; font-weight: 800; margin: 0 0 6px; }
+  .tt-diag-card .ok { color: #3F9165; font-weight: 700; }
+  .tt-diag-card .no { color: #C6484D; font-weight: 700; }
+  .tt-diag-card p { font-size: 12px; color: var(--muted); margin: 3px 0; line-height: 1.5; }
+
+  .tt-note-box {
+    background: #F3F1ED; border-radius: 10px; padding: 10px 14px; font-size: 12.5px;
+    color: var(--muted); line-height: 1.6; margin-bottom: 8px; white-space: pre-wrap;
+  }
+
+  .tt-grid-wrap { display: flex; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fff; }
+  .tt-grid-hours { flex: 0 0 44px; padding-top: 24px; }
+  .tt-grid-hour { font-size: 10.5px; color: var(--muted); text-align: right; padding-right: 6px; box-sizing: border-box; }
+  .tt-grid-days { flex: 1; display: flex; }
+  .tt-grid-day { flex: 1; border-left: 1px solid var(--line); position: relative; }
+  .tt-grid-day-label {
+    height: 24px; text-align: center; font-size: 12px; font-weight: 700; color: var(--muted);
+    border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: center;
+  }
+  .tt-grid-body { position: relative;
+    /* 가로 격자선 — 시간당 52px마다 (세로선은 .tt-grid-day border-left) */
+    background: repeating-linear-gradient(to bottom,
+      transparent 0, transparent 51px, var(--line) 51px, var(--line) 52px); }
+  .tt-grid-hourline { position: absolute; left: 0; right: 0; border-top: 1px solid var(--line); }
+  .tt-course-block {
+    position: absolute; left: 2px; right: 2px; border-radius: 6px; padding: 4px 6px;
+    color: #fff; font-size: 10.5px; line-height: 1.35; overflow: hidden; box-sizing: border-box;
+  }
+  .tt-course-block b { display: block; font-size: 11px; margin-bottom: 1px; }
+  .tt-block-pin { position: absolute; top: 1px; right: 2px; font-size: 10px; line-height: 1;
+    filter: drop-shadow(0 0 1px rgba(0,0,0,0.4)); }
+  .tt-block-sub { display: block; font-size: 9.5px; opacity: 0.9; line-height: 1.3; }
+  .tt-block-elearn {
+    display: inline-block; margin-top: 3px; background: rgba(255,255,255,0.85); color: var(--crimson-dark);
+    font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 8px;
+  }
+
+  .tt-table-wrap { overflow-x: auto; margin-bottom: 4px; }
+  .tt-course-table { width: 100%; border-collapse: collapse; font-size: 12.5px; background: #fff; }
+  .tt-course-table th, .tt-course-table td {
+    padding: 9px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap;
+  }
+  .tt-course-table th {
+    background: var(--crimson); color: #fff; font-weight: 700; font-size: 12px;
+  }
+  .tt-course-table tbody tr:hover { background: #FAF7F4; }
+  .tt-course-table td:last-child { text-align: center; }
+  .tt-pin-btn {
+    border: none; background: none; cursor: pointer; font-size: 15px;
+    filter: grayscale(1) opacity(0.4); transition: filter 0.12s, transform 0.12s;
+  }
+  .tt-pin-btn:hover { filter: grayscale(0.3) opacity(0.8); transform: scale(1.15); }
+  .tt-pin-btn.on { filter: none; transform: rotate(-20deg) scale(1.1); }
+
+  /* ── 결과 헤더 (제목 위 · 추천안 탭 + 직접 편집 같은 줄) ── */
+  .tt-result-head { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+  .tt-result-row { display: flex; align-items: center; gap: 8px; }
+  .tt-result-row .tt-edit-btn { margin-left: auto; }        /* 탭이 없어도 편집 버튼은 오른쪽 */
+  .tt-result-title { font-size: 18px; font-weight: 800; }   /* 색 지정 없음 = 다른 섹션 제목과 같은 검정 */
+  .tt-retake-warn { background: #FDF3F2; border: 1px solid #E5B7B2; color: var(--crimson-dark);
+    border-radius: 10px; padding: 9px 13px; font-size: 12.5px; margin: 14px 0 0; }
+
+  /* ── 직접 편집 ── */
+  .tt-edit-btn {
+    padding: 7px 14px; border: 1px solid var(--crimson); background: #fff; color: var(--crimson);
+    border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer;
+  }
+  .tt-edit-btn:hover { background: var(--crimson-soft); }
+  .es-toolbar {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    margin-bottom: 10px; flex-wrap: wrap;
+  }
+  .es-tools { display: flex; align-items: center; gap: 8px; }
+  .es-metrics { font-size: 12.5px; font-weight: 600; color: #444; margin-right: 4px; }
+  .es-conflict { color: var(--crimson); font-weight: 700; }
+  .es-exit { padding: 7px 14px; border: none; background: var(--crimson); color: #fff;
+    border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; }
+  .es-tools button { padding: 6px 12px; border: 1px solid var(--line); background: #fff;
+    border-radius: 8px; font-size: 12.5px; cursor: pointer; }
+  .es-tools button:hover { background: var(--crimson-soft); }
+  .es-hint-row { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .es-hint-row b { color: var(--crimson); }
+  /* 그리드 블록 우상단 삭제 × */
+  .tt-block-del { position: absolute; top: 0; right: 2px; font-size: 14px; font-weight: 800;
+    color: #fff; cursor: pointer; line-height: 1; opacity: 0.85; text-shadow: 0 0 2px rgba(0,0,0,0.5); }
+  .tt-block-del:hover { opacity: 1; transform: scale(1.25); }
+  .tt-block-del.cyber { position: static; color: var(--crimson); text-shadow: none;
+    background: none; border: none; font-size: 16px; }
+  /* 검색 미리보기 반투명 블록 */
+  .tt-preview-block { position: absolute; left: 2px; right: 2px; border-radius: 6px; padding: 3px 5px;
+    background: rgba(90,120,200,0.38); border: 1.5px dashed rgba(60,90,180,0.8); color: #1b2a5b;
+    font-size: 10px; overflow: hidden; pointer-events: none; z-index: 5; }
+  .tt-preview-block.conf { background: rgba(200,60,60,0.34); border-color: rgba(190,40,40,0.85); color: #6b1414; }
+  .tt-preview-block b { display: block; font-size: 10.5px; }
+  /* 편집 충돌 경고 팝업 (하단 중앙) */
+  .tt-editwarn { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(10px);
+    background: var(--crimson); color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 13px;
+    font-weight: 700; box-shadow: 0 8px 24px rgba(0,0,0,0.25); opacity: 0; pointer-events: none;
+    transition: opacity 0.15s, transform 0.15s; z-index: 1000; }
+  .tt-editwarn.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  /* 편집 2단: 왼쪽 검색 패널 · 오른쪽 그리드 */
+  .es-body { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+  .es-search { flex: 0 0 340px; max-width: 100%; border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px; background: #FCFAF8; position: sticky; top: 12px; }
+  .es-gridcol { flex: 1 1 420px; min-width: 0; }
+  .es-search-title { font-weight: 700; font-size: 13px; margin-bottom: 8px; }
+  .es-filters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; }
+  .es-filters input, .es-filters select {
+    padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; font-size: 12.5px; width: 110px;
+  }
+  .es-filters .es-sm { width: 60px; }
+  .es-filters .es-md { width: 88px; }
+  .es-time-row { flex: 1 1 100%; display: flex; align-items: center; gap: 6px; }
+  .es-time-label { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .es-tilde { color: var(--muted); }
+  .es-search-btn { padding: 7px 16px !important; border: none !important; background: var(--crimson) !important;
+    color: #fff; border-radius: 7px; font-weight: 700; font-size: 12.5px; cursor: pointer; width: auto !important; }
+  .es-results { display: flex; flex-direction: column; gap: 5px; max-height: 55vh; overflow-y: auto; }
+  .es-row { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; }
+  .es-row.conf { background: #FDF3F2; border-color: #E5B7B2; }
+  .es-row-sub { font-size: 11px; color: var(--muted); }
+  .es-add { padding: 5px 12px; border: 1px solid var(--crimson); background: var(--crimson); color: #fff;
+    border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .es-add.conf { background: #fff; color: var(--crimson); }
+  .es-added { font-size: 11.5px; color: var(--muted); font-weight: 700; white-space: nowrap; }
+  .tt-table-elearn {
+    background: var(--crimson-soft) !important; color: var(--crimson-dark) !important;
+  }
+
+  .tt-cyber-list { display: flex; flex-direction: column; gap: 6px; }
+  .tt-cyber-row {
+    display: flex; justify-content: space-between; align-items: center; background: #fff;
+    border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 12.5px;
+  }
+
+  .tt-warn-row {
+    display: flex; gap: 8px; align-items: flex-start; background: #FFF7E8; border: 1px solid #EFDDB0;
+    border-radius: 10px; padding: 8px 12px; font-size: 12.5px; margin-bottom: 6px; color: #7A5B12;
+  }
+  .tt-warn-row.required { background: #FBEAEA; border-color: #E7B9BC; color: var(--crimson-dark); }
+
+  .tt-move-row {
+    display: flex; justify-content: space-between; align-items: center; font-size: 12.5px;
+    background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; margin-bottom: 6px;
+  }
+  .tt-move-row.bad { border-color: #E7B9BC; background: #FBEAEA; }
+  .tt-move-row .tag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+  .tt-move-row.bad .tag { background: var(--crimson); color: #fff; }
+  .tt-move-row:not(.bad) .tag { background: #E4F1EA; color: #3F9165; }
+
+  @media (max-width: 900px) {
+    .tt-layout { flex-direction: column; }
+    .tt-form-col { max-width: 100%; flex: 1 1 auto; }
+  }
+
+  /* ── 수강편람 뷰어 ── */
+  .manual-pdf-frame {
+    width: 100%; height: 82vh; border: 1px solid var(--line); border-radius: 12px;
+    background: #EDEBE7;
+  }
+
+  /* ── 과목 설명 팝오버 ── */
+  #course-popover-backdrop {
+    position: fixed; inset: 0; background: rgba(28,27,31,0.35);
+    display: none; z-index: 997; align-items: center; justify-content: center;
+  }
+  #course-popover-backdrop.open { display: flex; }
+  #course-popover {
+    position: relative; width: 420px; max-width: 90vw;
+    background: #fff; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    padding: 24px; z-index: 998;
+  }
+  #course-popover h3 { margin: 0 0 10px; font-size: 17px; }
+  #course-popover p { font-size: 14px; line-height: 1.6; color: #333; margin: 0; }
+  #course-popover .disclaimer { font-size: 11.5px; color: var(--muted); margin-top: 14px; }
+  #course-popover .close-btn {
+    position: absolute; top: 14px; right: 16px; border: none; background: none;
+    cursor: pointer; font-size: 18px; color: var(--muted);
+  }
+
+  /* ── 챗봇 탭 (독립 뷰) ── */
+  #view-chat .view-chat-inner {
+    max-width: 760px; margin: 0 auto;
+  }
+
+  #chat-panel {
+    background: #fff; border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+    display: flex; flex-direction: column; overflow: hidden;
+    height: calc(100vh - 260px); min-height: 460px;
+  }
+
+  #chat-header {
+    background: var(--crimson); color: #fff; padding: 18px 20px;
+    font-weight: 700; font-size: 15px; display: flex; justify-content: space-between; align-items: center;
+    flex-shrink: 0;
+  }
+  #chat-header button {
+    background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; line-height: 1;
+  }
+
+  #chat-messages {
+    flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .msg { max-width: 85%; padding: 9px 12px; border-radius: 12px; font-size: 13.5px; line-height: 1.5; white-space: pre-wrap; }
+  .msg.user { align-self: flex-end; background: var(--crimson); color: #fff; border-bottom-right-radius: 3px; }
+  .msg.bot { align-self: flex-start; background: #F1EFEC; color: var(--ink); border-bottom-left-radius: 3px; }
+  .msg.bot .sources { font-size: 10.5px; color: var(--muted); margin-top: 6px; }
+
+  /* ── 챗봇 답변 마크다운 렌더링 스타일 ── */
+  .msg.bot .md { white-space: normal; }
+  .msg.bot .md > *:first-child { margin-top: 0; }
+  .msg.bot .md > *:last-child { margin-bottom: 0; }
+  .msg.bot .md p { margin: 0 0 8px; }
+  .msg.bot .md h1, .msg.bot .md h2, .msg.bot .md h3 {
+    font-size: 14px; font-weight: 800; margin: 12px 0 6px; letter-spacing: -0.01em;
+  }
+  .msg.bot .md strong { font-weight: 800; color: var(--crimson-dark); }
+  .msg.bot .md ul, .msg.bot .md ol { margin: 4px 0 8px; padding-left: 18px; }
+  .msg.bot .md li { margin-bottom: 3px; }
+  .msg.bot .md code {
+    background: rgba(0,0,0,0.06); padding: 1px 4px; border-radius: 4px;
+    font-size: 12px; font-family: 'SFMono-Regular', Consolas, monospace;
+  }
+  .msg.bot .md pre { background: rgba(0,0,0,0.06); padding: 8px; border-radius: 8px; overflow-x: auto; }
+  .msg.bot .md blockquote {
+    border-left: 3px solid var(--crimson); margin: 6px 0; padding: 2px 10px; color: var(--muted);
+  }
+  .msg.bot .md hr { border: none; border-top: 1px solid var(--line); margin: 10px 0; }
+  .msg.bot .md table {
+    display: block;              /* 표만 독립적으로 가로 스크롤되는 컨테이너가 되도록 */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-collapse: collapse;
+    width: max-content;          /* 억지로 채팅창 폭에 맞추지 않고, 표 원래 폭 그대로 */
+    max-width: 100%;
+    margin: 8px 0;
+    font-size: 11.5px;
+  }
+  .msg.bot .md th, .msg.bot .md td {
+    border: 1px solid var(--line); padding: 4px 8px; text-align: left;
+    white-space: nowrap;         /* 셀 안에서 글자가 뭉개지며 줄바꿈되지 않도록 */
+  }
+  .msg.bot .md th { background: rgba(0,0,0,0.04); }
+
+  #chat-input-row {
+    display: flex; gap: 8px; padding: 14px; border-top: 1px solid var(--line); flex-shrink: 0;
+  }
+  #chat-input {
+    flex: 1; border: 1px solid var(--line); border-radius: 20px; padding: 9px 14px;
+    font-family: inherit; font-size: 13.5px; outline: none;
+  }
+  #chat-input:focus { border-color: var(--crimson); }
+  #chat-send {
+    background: var(--crimson); color: #fff; border: none; border-radius: 50%;
+    width: 36px; height: 36px; cursor: pointer; font-size: 14px; flex-shrink: 0;
+  }
+
+  @media (max-width: 480px) {
+    #chat-panel { height: calc(100vh - 200px); min-height: 380px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand" onclick="switchView('home')" style="cursor:pointer;">
+    <img src="/static/logo.png" alt="CourseMate 로고">
+    CourseMate
+  </div>
+  <nav id="nav">
+    <button data-view="chat">챗봇</button>
+    <button data-view="calendar">학사일정</button>
+    <button data-view="manual">수강편람</button>
+    <button data-view="roadmap">교과과정</button>
+    <button data-view="timetable">시간표 생성</button>
+  </nav>
+</header>
+
+<main>
+  <section id="view-home" class="view active">
+    <div class="hero hero-split">
+      <div class="hero-left">
+        <h1 class="hero-title">CourseMate</h1>
+        <p class="hero-tagline">수강신청, 더 이상<br>수강편람 속에서 헤매지 마세요.</p>
+        <p class="hero-desc">
+          세종대학교 수강편람을 기반으로 재수강, 졸업요건, 교과과정, 학사일정
+          정보를 AI 챗봇과 함께 쉽고 정확하게 확인할 수 있습니다.
+        </p>
+      </div>
+      <div class="hero-right">
+        <div class="hero-questions-card">
+          <div class="hero-questions-track">
+            <div class="hero-question-pill">내 입학년도 기준 졸업요건은 어디서 확인하나요?</div>
+            <div class="hero-question-pill">수강신청 변경 기간이 언제까지인가요?</div>
+            <div class="hero-question-pill">영어졸업인증은 졸업 전에 아무데서나 따서 학교에 제출하면 되나요?</div>
+            <div class="hero-question-pill">2학년 수강신청 날짜 언제인가요?</div>
+            <div class="hero-question-pill">수강신청 21학점 하려면 학점 얼마 넘어야 되나요?</div>
+            <div class="hero-question-pill">K-MOOC 강의는 어떻게 듣는 건가요?</div>
+            <div class="hero-question-pill">성적이 C+이면 나중에 재수강할 수 있나요?</div>
+            <div class="hero-question-pill">계절학기 수강신청 어떻게 해야 해요?</div>
+            <!-- 아래는 무한 스크롤을 위한 동일 목록 복제본 -->
+            <div class="hero-question-pill" aria-hidden="true">내 입학년도 기준 졸업요건은 어디서 확인하나요?</div>
+            <div class="hero-question-pill" aria-hidden="true">수강신청 변경 기간이 언제까지인가요?</div>
+            <div class="hero-question-pill" aria-hidden="true">영어졸업인증은 졸업 전에 아무데서나 따서 학교에 제출하면 되나요?</div>
+            <div class="hero-question-pill" aria-hidden="true">2학년 수강신청 날짜 언제인가요?</div>
+            <div class="hero-question-pill" aria-hidden="true">수강신청 21학점 하려면 학점 얼마 넘어야 되나요?</div>
+            <div class="hero-question-pill" aria-hidden="true">K-MOOC 강의는 어떻게 듣는 건가요?</div>
+            <div class="hero-question-pill" aria-hidden="true">성적이 C+이면 나중에 재수강할 수 있나요?</div>
+            <div class="hero-question-pill" aria-hidden="true">계절학기 수강신청 어떻게 해야 해요?</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="showcase-carousel">
+    <div class="showcase-track">
+
+    <!-- 쇼케이스 1: 수강편람 챗봇 -->
+    <div class="showcase">
+      <div class="showcase-text">
+        <span class="showcase-eyebrow">💬 수강편람 챗봇</span>
+        <h2>궁금한 건 바로 채팅으로</h2>
+        <p>수강신청 학점, 재수강 성적 기준, 졸업 요건 같은 걸 물어보면
+           수강편람 원문을 근거로 정확하게 답해줘요. 문서에 없는 내용은
+           추측하지 않고 솔직하게 모른다고 답해요.</p>
+        <button class="cta-btn" onclick="toggleChat()">챗봇 열어보기 →</button>
+      </div>
+      <div class="showcase-preview">
+        <div class="mock-chat">
+          <div class="mock-msg user">재수강 성적은 몇 점을 넘을 수 없어?</div>
+          <div class="mock-msg bot">재수강한 과목의 성적은 A0를 초과할 수 없어요.<br>
+            <span class="mock-source">근거: 5. 재수강 안내 &gt; 1. 재수강 성적 및 학점 수</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 쇼케이스 2: 학사일정 -->
+    <div class="showcase reverse">
+      <div class="showcase-text">
+        <span class="showcase-eyebrow">📅 학사일정</span>
+        <h2>중요한 날짜, 놓치지 마세요</h2>
+        <p>수강신청, 중간·기말고사, 등록 기간 같은 학사일정을 D-day와 함께
+           한눈에 확인할 수 있어요.</p>
+        <button class="cta-btn" onclick="switchView('calendar')">학사일정 보기 →</button>
+      </div>
+      <div class="showcase-preview">
+        <div class="mock-calendar-dday">
+          <div class="mini-dday">D-7</div>
+          <div class="mini-dday-label">1학기 중간고사</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 쇼케이스 3: 수강편람 (원문 뷰어) -->
+    <div class="showcase">
+      <div class="showcase-text">
+        <span class="showcase-eyebrow">📄 수강편람</span>
+        <h2>원문이 궁금할 땐 그대로 확인</h2>
+        <p>2026-1학기 수강편람 원문 PDF를 페이지별로 사이트 안에서 바로 확인할 수 있어요.
+           챗봇 답변의 근거가 궁금할 때 직접 원문을 펼쳐볼 수 있어요.</p>
+        <button class="cta-btn" onclick="switchView('manual')">수강편람 보기 →</button>
+      </div>
+      <div class="showcase-preview">
+        <div class="mock-manual">
+          <div class="mock-manual-page">📖</div>
+          <div class="mock-manual-label">145페이지 전체 열람 가능</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 쇼케이스 4: 나의 교과과정 -->
+    <div class="showcase reverse">
+      <div class="showcase-text">
+        <span class="showcase-eyebrow">🗺️ 나의 교과과정</span>
+        <h2>내 학번 기준 커리큘럼 로드맵</h2>
+        <p>학과와 입학년도를 선택하면, 학년·학기별로 어떤 과목을 들어야 하는지
+           한눈에 볼 수 있어요. 과목을 클릭하면 무엇을 배우는지 간단한 설명도 볼 수 있어요.</p>
+        <button class="cta-btn" onclick="switchView('roadmap')">교과과정 보기 →</button>
+      </div>
+      <div class="showcase-preview">
+        <div class="mock-roadmap">
+          <div class="mock-course" style="background:rgba(239,159,39,0.14);">자료구조및실습<span>전공필수</span></div>
+          <div class="mock-course" style="background:rgba(133,183,235,0.14);">알고리즘및실습<span>전공선택</span></div>
+          <div class="mock-course" style="background:rgba(93,202,165,0.14);">확률및통계<span>전공기초</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 쇼케이스 5: 시간표 생성 -->
+    <div class="showcase">
+      <div class="showcase-text">
+        <span class="showcase-eyebrow">🗓️ 시간표 생성</span>
+        <h2>다음 학기 시간표, 자동으로</h2>
+        <p>학과·입학년도와 원하는 조건(공강 요일, 선호 시간대, 목표 학점 등)을 입력하면
+           졸업요건을 반영해서 시간표를 자동으로 짜줘요.</p>
+        <button class="cta-btn" onclick="switchView('timetable')">시간표 생성하기 →</button>
+      </div>
+      <div class="showcase-preview">
+        <div class="mock-calendar-dday">
+          <div class="mini-dday">18</div>
+          <div class="mini-dday-label">목표 학점 기준 자동 추천</div>
+        </div>
+      </div>
+    </div>
+
+    </div><!-- /showcase-track -->
+    <div class="showcase-dots" id="showcase-dots"></div>
+    </div><!-- /showcase-carousel -->
+
+    <div class="faq-section">
+      <h2 class="faq-title">자주 묻는 질문</h2>
+      <div class="faq-list" id="faq-list"></div>
+    </div>
+
+    <p class="hero-note">※ 답변은 참고용이며, 정확한 확인은 학사정보시스템에서 진행해주세요.</p>
+  </section>
+
+  <section id="view-roadmap" class="view">
+    <h1>나의 교과과정</h1>
+    <p class="subtitle">학과와 입학년도를 선택하면 학번 기준 로드맵을 보여줘요. 과목을 클릭하면 간단한 설명도 볼 수 있어요.</p>
+
+    <div class="selector-row">
+      <select id="dept-select"><option>불러오는 중...</option></select>
+      <select id="year-select"></select>
+    </div>
+
+    <div class="legend" id="legend"></div>
+    <div id="roadmap-container" class="roadmap-full-bleed">
+      <div class="empty-state">학과와 입학년도를 선택해주세요.</div>
+    </div>
+  </section>
+  <section id="view-calendar" class="view">
+    <h1>학사일정</h1>
+    <p class="subtitle">2026학년도 학사일정을 한눈에 확인할 수 있어요.</p>
+
+    <div id="dday-widget"><div class="dday-track" id="dday-track"></div></div>
+
+    <div class="cal-toggle">
+      <button id="cal-toggle-list" class="cal-toggle-btn active" onclick="setCalendarMode('list')">리스트 보기</button>
+      <button id="cal-toggle-grid" class="cal-toggle-btn" onclick="setCalendarMode('grid')">달력 보기</button>
+    </div>
+
+    <div id="calendar-list"></div>
+
+    <div id="calendar-grid-wrap" style="display:none;">
+      <div class="cal-nav">
+        <button onclick="shiftMonth(-1)">◀</button>
+        <h3 id="cal-nav-label"></h3>
+        <button onclick="shiftMonth(1)">▶</button>
+      </div>
+
+      <div class="cal-body">
+        <div class="cal-grid-col">
+          <div class="cal-legend" id="cal-legend"></div>
+          <div id="cal-long-events"></div>
+          <div class="cal-grid-header">
+            <div class="sun">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="sat">토</div>
+          </div>
+          <div id="cal-weeks"></div>
+        </div>
+
+        <div class="cal-add-col">
+          <h3 class="cal-add-title">일정 추가</h3>
+          <div class="cal-add-form" id="cal-add-form-text">
+            <input type="text" id="cal-add-text" placeholder="내 일정 입력 (예: 6/22 종강, 6월 22일 종강, 6-22 종강)" onkeydown="if(event.key==='Enter') addPersonalEvent()">
+            <button id="cal-add-btn" onclick="addPersonalEvent()">+ 추가</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-manual" class="view">
+    <h1>수강편람</h1>
+    <p class="subtitle">2026-1학기 수강편람 원문을 PDF 그대로 확인할 수 있어요.</p>
+    <iframe id="manual-pdf-frame" class="manual-pdf-frame"></iframe>
+    <div id="manual-error" class="empty-state" style="display:none;"></div>
+  </section>
+
+  <section id="view-timetable" class="view">
+    <h1>시간표 생성</h1>
+    <div class="tt-sub-row">
+      <p class="subtitle">내 정보를 입력하면 시간충돌 없는 시간표를 자동으로 짜드려요.</p>
+      <div class="tt-tips" id="tt-tips">
+        <span class="tt-tips-label">💡 시간표 꿀팁</span>
+        <div class="tt-tips-view"><p class="tt-tips-text" id="tt-tips-text"></p></div>
+        <div class="tt-tips-nav">
+          <button type="button" onclick="ttTipPrev()" aria-label="이전 꿀팁">▲</button>
+          <button type="button" onclick="ttTipNext()" aria-label="다음 꿀팁">▼</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tt-layout">
+      <div class="tt-form-col">
+        <div class="tt-card">
+          <h3 class="tt-card-title">기본 정보</h3>
+          <div class="tt-row">
+            <div class="tt-field">
+              <label>학과</label>
+              <select id="tt-dept"></select>
+            </div>
+            <div class="tt-field tt-field-sm">
+              <label>학번(입학년도)</label>
+              <input type="number" id="tt-yr" placeholder="예: 2022" value="2022">
+            </div>
+            <div class="tt-field tt-field-sm">
+              <label>학년</label>
+              <select id="tt-grade">
+                <option value="1">1학년</option>
+                <option value="2">2학년</option>
+                <option value="3" selected>3학년</option>
+                <option value="4">4학년</option>
+              </select>
+            </div>
+          </div>
+          <div class="tt-row">
+            <div class="tt-field tt-field-sm">
+              <label>목표학점</label>
+              <input type="number" id="tt-credits" value="18">
+            </div>
+            <div class="tt-field tt-field-sm">
+              <label>선호 시간대</label>
+              <select id="tt-prefer">
+                <option value="오전">오전 선호</option>
+                <option value="오후">오후 선호</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="tt-card">
+          <h3 class="tt-card-title">희망 과목</h3>
+          <p class="tt-card-desc">꼭 듣고 싶은 과목이 있으면 추가하세요. 최우선으로 배치돼요.</p>
+          <div class="tt-tag-input-wrap">
+            <div class="tt-tag-input">
+              <input type="text" id="tt-want-input" placeholder="과목명 입력 후 Enter" autocomplete="off">
+              <button onclick="ttAddTag('want')">+ 추가</button>
+            </div>
+            <div class="tt-suggest-list" id="tt-want-suggest"></div>
+          </div>
+          <div class="tt-tags" id="tt-want-tags"></div>
+        </div>
+
+        <div class="tt-card">
+          <h3 class="tt-card-title">이미 이수한 과목</h3>
+          <p class="tt-card-desc">학사정보시스템 "기이수성적조회"에서 받은 엑셀 파일을 올리면 이수과목이 자동으로 추가돼요.</p>
+          <div class="tt-upload-row">
+            <label class="tt-upload-btn">
+              📄 엑셀 업로드
+              <input type="file" id="tt-transcript-file" accept=".xlsx,.xls" onchange="ttUploadTranscript(event)" hidden>
+            </label>
+            <span id="tt-upload-status" class="tt-hint"></span>
+            <button type="button" class="tt-clear-taken" onclick="ttClearTaken()">초기화</button>
+          </div>
+          <div class="tt-tag-input-wrap">
+            <div class="tt-tag-input">
+              <input type="text" id="tt-taken-input" placeholder="과목명 입력 후 Enter (직접 추가도 가능)" autocomplete="off">
+              <button onclick="ttAddTag('taken')">+ 추가</button>
+            </div>
+            <div class="tt-suggest-list" id="tt-taken-suggest"></div>
+          </div>
+          <div class="tt-tags" id="tt-taken-tags"></div>
+        </div>
+
+        <div class="tt-card">
+          <h3 class="tt-card-title">안 들을 과목</h3>
+          <p class="tt-card-desc">이번 학기에 빼고 싶은 과목이 있으면 추가하세요. 후보에서 완전히 제외돼요.</p>
+          <div class="tt-tag-input-wrap">
+            <div class="tt-tag-input">
+              <input type="text" id="tt-avoid-input" placeholder="과목명 입력 후 Enter" autocomplete="off">
+              <button onclick="ttAddTag('avoid')">+ 추가</button>
+            </div>
+            <div class="tt-suggest-list" id="tt-avoid-suggest"></div>
+          </div>
+          <div class="tt-tags" id="tt-avoid-tags"></div>
+        </div>
+
+        <details class="tt-advanced">
+          <summary>고급 옵션</summary>
+          <div class="tt-card tt-card-flat">
+
+            <div class="tt-adv-section">
+              <div class="tt-field">
+                <label>공강 요일</label>
+                <div class="tt-checkrow" id="tt-offdays">
+                  <label><input type="checkbox" value="월"> 월</label>
+                  <label><input type="checkbox" value="화"> 화</label>
+                  <label><input type="checkbox" value="수"> 수</label>
+                  <label><input type="checkbox" value="목"> 목</label>
+                  <label><input type="checkbox" value="금"> 금</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="tt-adv-section">
+              <label class="tt-adv-label">차단 시간대 <span class="tt-hint">(알바·학원 등 절대 못 듣는 시간)</span></label>
+              <div class="tt-block-builder">
+                <div class="tt-checkrow tt-block-days">
+                  <label><input type="checkbox" value="월"> 월</label>
+                  <label><input type="checkbox" value="화"> 화</label>
+                  <label><input type="checkbox" value="수"> 수</label>
+                  <label><input type="checkbox" value="목"> 목</label>
+                  <label><input type="checkbox" value="금"> 금</label>
+                  <label><input type="checkbox" value="토"> 토</label>
+                </div>
+                <div class="tt-block-time-row">
+                  <input type="time" id="tt-block-start" value="09:00">
+                  <span class="tt-hint">~</span>
+                  <input type="time" id="tt-block-end" value="10:30">
+                  <button type="button" class="tt-ghost-btn" onclick="ttAddBlock()">+ 추가</button>
+                </div>
+              </div>
+              <div class="tt-tags" id="tt-blocks-tags"></div>
+            </div>
+
+            <div class="tt-adv-section">
+              <div class="tt-row">
+                <div class="tt-field tt-field-sm">
+                  <label>전공 개수 상한</label>
+                  <input type="number" id="tt-major-limit" placeholder="제한없음">
+                </div>
+                <div class="tt-field tt-field-sm">
+                  <label>교양 개수 상한</label>
+                  <input type="number" id="tt-ge-limit" placeholder="제한없음">
+                </div>
+              </div>
+              <div class="tt-row">
+                <div class="tt-field">
+                  <label>공강 스타일</label>
+                  <select id="tt-gap-style">
+                    <option value="">상관없음</option>
+                    <option value="연강">연강 위주로 (공강 최소화)</option>
+                    <option value="큰공강">3시간 이상 공강 방지</option>
+                  </select>
+                </div>
+                <div class="tt-field">
+                  <label>점심시간 비우기</label>
+                  <select id="tt-lunch">
+                    <option value="">안 함</option>
+                    <option value="11:00~12:00">11~12시</option>
+                    <option value="12:00~13:00">12~13시</option>
+                    <option value="13:00~14:00">13~14시</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="tt-adv-section">
+              <div class="tt-checkrow">
+                <label><input type="checkbox" id="tt-cyber"> 사이버강좌(K-MOOC 등) 포함</label>
+                <label><input type="checkbox" id="tt-move-opt"> 동선 최적화(건물 이동 고려)</label>
+                <label><input type="checkbox" id="tt-no-eng"> 영어강의 제외</label>
+                <!-- 강의계획서 사이트 점검(~7/27) 임시 숨김: 팀플/P·NP 제외 (계획서 데이터 16과목뿐이라 반쪽) -->
+                <!-- <label><input type="checkbox" id="tt-no-team"> 팀플 있는 강의 제외</label> -->
+                <!-- <label><input type="checkbox" id="tt-no-pnp"> P/NP 강의 제외</label> -->
+              </div>
+            </div>
+
+            <div class="tt-adv-section tt-adv-section-last">
+              <label class="tt-adv-label">선호 우선순위
+                <span class="tt-hint">(선호끼리 충돌할 때 무엇을 먼저 지킬지 — 같은 순위도 가능해요)</span></label>
+              <div class="tt-row">
+                <div class="tt-field tt-field-sm">
+                  <label>시간대 선호</label>
+                  <select id="tt-rank-time">
+                    <option value="1">1순위</option><option value="2">2순위</option><option value="3">3순위</option>
+                  </select>
+                </div>
+                <div class="tt-field tt-field-sm">
+                  <label>공강 스타일</label>
+                  <select id="tt-rank-gap">
+                    <option value="1">1순위</option><option value="2">2순위</option><option value="3">3순위</option>
+                  </select>
+                </div>
+                <div class="tt-field tt-field-sm">
+                  <label>동선 최적화</label>
+                  <select id="tt-rank-walk">
+                    <option value="1">1순위</option><option value="2">2순위</option><option value="3">3순위</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <button class="cta-btn tt-submit" onclick="ttGenerate()">시간표 생성하기 →</button>
+      </div>
+
+      <div class="tt-result-col">
+        <div id="tt-empty" class="empty-state">왼쪽에서 정보를 입력하고 "시간표 생성하기"를 눌러주세요.</div>
+        <div id="tt-loading" class="empty-state" style="display:none;">⏳ 시간표를 계산하는 중이에요...</div>
+        <div id="tt-error" class="tt-error" style="display:none;"></div>
+        <div id="tt-nl-box" class="tt-card tt-nl-card" style="display:none;">
+          <h3 class="tt-card-title">💬 말로 조정하기</h3>
+          <p class="tt-card-desc">생성된 시간표를 자연어로 고쳐보세요. 조건으로 바꿔서 다시 계산해드려요.</p>
+          <div class="tt-nl-row">
+            <input type="text" id="tt-nl-input" placeholder="예: 금요일 비워주고 확률및통계는 빼줘"
+                   onkeydown="if(event.key==='Enter') ttNlAdjust()">
+            <button class="tt-ghost-btn" onclick="ttNlAdjust()">적용</button>
+          </div>
+          <div class="tt-chips" id="tt-nl-chips">
+            <button class="tt-chip" onclick="ttChip('교양 하나 더 넣어줘')">＋ 교양 하나 더</button>
+            <button class="tt-chip" onclick="ttChip('아침 수업 빼줘')">아침 수업 빼줘</button>
+            <button class="tt-chip" onclick="ttChip('우주공강 줄여줘')">우주공강 줄여줘</button>
+            <button class="tt-chip" onclick="ttChip('금요일 비워줘')">금요일 공강</button>
+          </div>
+          <div id="tt-nl-status" class="tt-hint"></div>
+        </div>
+        <div id="tt-results" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- 무작위 강의 뽑기 (시간표 뷰 전용 — 뷰가 숨겨지면 함께 숨겨짐) -->
+    <div id="capsule-wrap">
+      <div class="capsule-tip">애매하게 남은 학점, 뭐로 채울지 고민된다면?<br><b>행운의 뽑기</b>를 해보세요! 🎉</div>
+      <button id="capsule-btn" onclick="capsuleOpen()" aria-label="무작위 강의 뽑기">
+        <img class="capsule-ico" src="/static/capsule_machine.png?v=3" alt="캡슐 뽑기 기계">
+      </button>
+    </div>
+    <div id="capsule-modal" class="capsule-backdrop" onclick="if(event.target===this) capsuleClose()">
+      <div class="capsule-card">
+        <button class="capsule-x" onclick="capsuleClose()">×</button>
+        <div class="capsule-title"> 무작위 강의 뽑기</div>
+        <div class="capsule-sub">애매하게 남은 학점, 뭐로 채울지 고민된다면? 조건을 고르고 뽑아보세요. '선택 안 함'은 무작위로 돌아가요.</div>
+        <div class="capsule-form">
+          <label>학과<select id="cap-dept"></select></label>
+          <label>구분<select id="cap-gubun"><option value="">선택 안 함</option><option>교양</option><option>전공</option></select></label>
+          <label>필수/선택<select id="cap-sebu"><option value="">선택 안 함</option><option>필수</option><option>선택</option></select></label>
+          <label>학점<select id="cap-credit"><option value="">선택 안 함</option><option>1</option><option>2</option><option>3</option></select></label>
+          <label>사이버강좌<select id="cap-cyber"><option value="">선택 안 함</option><option>있음</option><option>없음</option></select></label>
+          <label>영어강의<select id="cap-eng"><option value="">선택 안 함</option><option>있음</option><option>없음</option></select></label>
+        </div>
+        <div class="capsule-btns">
+          <button class="capsule-rand" onclick="capsuleAllRandom()">🎲 모두 랜덤</button>
+          <button class="capsule-draw" onclick="capsuleDraw()">뽑기!</button>
+        </div>
+        <div id="capsule-result" class="capsule-result"></div>
+      </div>
+    </div>
+
+    <!-- 뽑기 연출 스테이지 (돔 안 캡슐이 우르르 → 하나가 아래로 빠짐 → 배출구에서 캡슐 → 중앙 → 클릭하면 반쪽이 벌어지며 빛) -->
+    <div id="gacha-stage" class="gacha-stage">
+      <div class="gacha-machine" id="gacha-machine">
+        <img class="gm-img" id="gacha-machine-img" src="/static/capsule_machine_empty.png?v=3" alt="">
+        <div class="gm-caps" id="gm-caps"></div>
+      </div>
+      <div class="gacha-capsule" id="gacha-capsule">
+        <div class="gc-top"></div>
+        <div class="gc-bot"></div>
+        <div class="gc-glow"></div>
+      </div>
+      <div class="gacha-hint" id="gacha-hint">화면을 클릭하세요!</div>
+    </div>
+
+    <!-- 뽑기 결과 리빌 팝업 (페이드 인 + 빵빠레) -->
+    <div id="capsule-reveal" class="capsule-reveal">
+      <div class="capsule-reveal-card">
+        <div class="capsule-confetti" id="capsule-confetti"></div>
+        <div class="capsule-reveal-body" id="capsule-reveal-body"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-chat" class="view">
+    <h1>AI 챗봇</h1>
+    <div class="subtitle">수강신청, 재수강, 졸업 기준 등 수강편람 관련 질문을 물어보세요.</div>
+    <div class="view-chat-inner">
+      <div id="chat-panel">
+        <div id="chat-header">
+          <span>수강편람 챗봇</span>
+        </div>
+        <div id="chat-messages">
+          <div class="msg bot">안녕하세요! 수강신청, 재수강, 졸업 기준 등 수강편람 관련 질문을 물어보세요.</div>
+        </div>
+        <div id="chat-input-row">
+          <input id="chat-input" placeholder="질문을 입력하세요" onkeydown="if(event.key==='Enter') sendChat()">
+          <button id="chat-send" onclick="sendChat()">↑</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div id="course-popover-backdrop" onclick="if(event.target===this) closePopover()">
+  <div id="course-popover">
+    <button class="close-btn" onclick="closePopover()">×</button>
+    <h3 id="popover-title"></h3>
+    <p id="popover-body">불러오는 중...</p>
+    <div class="disclaimer">※ 일반적인 과목 소개이며, 실제 강의계획서와 다를 수 있어요.</div>
+  </div>
+</div>
+
+<script>
+const API = "";
+
+function hexToRgba(hex, alpha) {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+// ── 자주 묻는 질문 ──
+const FAQ_ITEMS = [
+  {
+    q: 'CourseMate는 어떤 서비스인가요?',
+    a: 'CourseMate는 세종대학교 2026-1학기 수강편람을 기반으로 제작된 AI 학사 도우미입니다. 수강신청, 재수강, 교과과정, 졸업요건 등에 관한 질문에 수강편람의 원문 근거와 함께 답변하며, 학사일정 확인, 교과과정 로드맵 조회, 수강편람 원문 열람 기능도 제공합니다.',
+  },
+  {
+    q: '교과과정 로드맵에서는 무엇을 확인할 수 있나요?',
+    a: '학과별 교과과정과 과목 간의 연계 관계를 한눈에 확인할 수 있습니다. 학년과 학기별 권장 이수 과목을 살펴보며 자신의 수강 계획을 세우는 데 활용할 수 있습니다.',
+  },
+  {
+    q: '최신 학사제도 변경사항도 반영되나요?',
+    a: 'CourseMate는 세종대학교 2026-1학기 수강편람을 기준으로 정보를 제공합니다. 수강편람 발행 이후 변경된 학사제도나 추가 공지는 즉시 반영되지 않을 수 있으므로, 최신 내용은 학교 홈페이지와 학사 공지를 함께 확인해 주세요.',
+  },
+  {
+    q: 'CourseMate의 답변은 항상 정확한가요?',
+    a: 'CourseMate는 수강편람의 내용을 바탕으로 답변하지만, 질문의 표현이나 문서 해석 과정에 따라 일부 부정확한 답변이 제공될 수 있습니다. 중요한 학사 결정과 관련된 내용은 답변에 제시된 원문 근거를 확인하고, 필요한 경우 담당 부서에 문의해 주세요.',
+  },
+  {
+    q: '답변이 수강편람 내용과 다를 경우 어떻게 해야 하나요?',
+    a: 'CourseMate의 답변보다 수강편람 원문과 학교의 공식 공지를 우선적으로 참고해야 합니다. 내용이 서로 다르거나 해석이 어려운 경우에는 학과 사무실이나 학사 담당 부서에 문의하여 정확한 내용을 확인해 주세요.',
+  },
+];
+
+function renderFaq() {
+  const list = document.getElementById('faq-list');
+  list.innerHTML = FAQ_ITEMS.map((item, i) => `
+    <div class="faq-item" id="faq-item-${i}">
+      <button class="faq-question" onclick="toggleFaq(${i})">
+        <span>${item.q}</span>
+        <span class="faq-icon">+</span>
+      </button>
+      <div class="faq-answer"><p>${item.a}</p></div>
+    </div>
+  `).join('');
+}
+
+function toggleFaq(i) {
+  document.getElementById('faq-item-' + i).classList.toggle('open');
+}
+
+renderFaq();
+
+// ── 네비게이션 (화면 전환, 실제 새로고침 없음) ──
+function switchView(viewName) {
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('active', b.dataset.view === viewName));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + viewName).classList.add('active');
+
+  // 홈 캐러셀 버튼 등 어떤 경로로 들어와도 필요한 데이터가 항상 로드되도록,
+  // 각 뷰의 최초 로드 함수를 여기서 함께 호출한다 (각 함수는 내부적으로
+  // 한 번만 로드되게 플래그로 막혀 있어서 여러 번 호출돼도 안전함).
+  if (viewName === 'calendar') loadCalendar();
+  if (viewName === 'manual') loadManual();
+  if (viewName === 'timetable') loadTimetableMeta();
+}
+
+document.querySelectorAll('#nav button').forEach(btn => {
+  btn.addEventListener('click', () => switchView(btn.dataset.view));
+});
+
+// ── 시간표 꿀팁 배너 (자동 롤링) ──
+const TT_TIPS = [
+  "하루 수업은 2~3과목 정도로 구성하면 시험 일정이 비교적 분산되는 경우가 많습니다.",
+  "학점을 많이 들을 계획이라면 공강 없이 연강으로 배치해 이동 시간을 줄여보세요.",
+  "자격증·취업 준비를 병행한다면 오후 3시 이전에 끝나는 시간표를 고려해 보세요.",
+  "1교시는 주 2회 정도가 부담이 적습니다. 다만, 통학 시간이 길다면 신중하게 선택하세요.",
+  "1.5~2시간 정도의 애매한 공강은 활용도가 낮으니 가능한 피하는 것을 추천합니다.",
+  "필수 전공이 많은 학기라면 P/NP 과목을 적절히 활용하는 것도 방법입니다.",
+  "시험 유형(객관식·단답형·서술형)을 미리 확인하면 자신의 학습 스타일에 맞는 과목을 선택하기 쉽습니다.",
+  "강의평과 선배 후기를 참고하면 만족도가 높은 강의를 찾는 데 도움이 됩니다.",
+  "신설 과목은 정보가 적을 수 있으니 후기가 충분한 과목과 함께 균형 있게 선택해 보세요.",
+  "비대면(사이버) 강좌 여부를 미리 확인하면 시간표를 더 유연하게 구성할 수 있습니다.",
+  "꿀강도 좋지만, 정말 배우고 싶은 강의 1~2개는 꼭 넣어보세요.",
+  "통학 시간이 길다면 하루에 2~3과목 이상 묶어 등교 횟수를 줄이는 것도 좋은 전략입니다.",
+  "1학년이라면 필수교양과 졸업요건을 먼저 확인하고 시간표를 구성하세요.",
+  "수강신청은 항상 플랜 B, 플랜 C까지 준비해 두는 것이 좋습니다.",
+  "시험이 같은 날 3과목 이상 몰리지 않도록 확인하세요.",
+  "실습·실험 과목은 과제와 수업 시간이 길 수 있으니 함께 듣는 과목 수를 조절하세요.",
+  "건물 이동 시간을 확인하세요. 연강인데 캠퍼스 반대편이면 이동이 어려울 수 있습니다.",
+  "교수님이 달라도 과목명은 같을 수 있으니 분반별 후기를 꼭 확인하세요.",
+  "학점만 보고 선택하기보다 관심 있는 분야 과목을 한두 개 포함하면 학습 만족도가 높아집니다.",
+  "수강신청 직후 정정 기간까지 고려하면 원하는 시간표를 완성할 가능성이 높아집니다.",
+  "자세한 수강신청 일정은 CourseMate 학사일정 페이지에서 확인하세요.",
+];
+let ttTipIdx = 0, ttTipTimer = null;
+function ttTipShow(i) {
+  ttTipIdx = (i + TT_TIPS.length) % TT_TIPS.length;
+  const el = document.getElementById('tt-tips-text');
+  if (!el) return;
+  el.style.opacity = '0';
+  setTimeout(() => { el.textContent = TT_TIPS[ttTipIdx]; el.style.opacity = '1'; }, 220);
+}
+function ttTipRestart() { clearInterval(ttTipTimer); ttTipTimer = setInterval(() => ttTipShow(ttTipIdx + 1), 6000); }
+function ttTipNext() { ttTipShow(ttTipIdx + 1); ttTipRestart(); }
+function ttTipPrev() { ttTipShow(ttTipIdx - 1); ttTipRestart(); }
+(function ttTipInit() {
+  const el = document.getElementById('tt-tips-text');
+  if (!el) return;
+  el.textContent = TT_TIPS[0];
+  ttTipRestart();
+  const box = document.getElementById('tt-tips');
+  box.addEventListener('mouseenter', () => clearInterval(ttTipTimer));  // 마우스 올리면 멈춤
+  box.addEventListener('mouseleave', ttTipRestart);
+})();
+
+// ── 과목 캡슐 뽑기 ──
+function capsuleOpen() {
+  const dept = document.getElementById('tt-dept');
+  const cap = document.getElementById('cap-dept');
+  if (cap && dept) {   // 학과 옵션 = 시간표 학과 목록 + '선택 안 함', 기본은 내 학과
+    cap.innerHTML = '<option value="">선택 안 함</option>' +
+      Array.from(dept.options).map(o => `<option value="${ttEsc(o.value)}">${ttEsc(o.text)}</option>`).join('');
+    cap.value = dept.value;
+  }
+  document.getElementById('capsule-result').innerHTML = '';
+  document.getElementById('capsule-modal').style.display = 'flex';
+}
+function capsuleClose() { document.getElementById('capsule-modal').style.display = 'none'; }
+function capsuleAllRandom() {   // 모든 항목 '선택 안 함'으로 → 완전 무작위
+  ['cap-dept', 'cap-gubun', 'cap-sebu', 'cap-credit', 'cap-cyber', 'cap-eng']
+    .forEach(id => { document.getElementById(id).value = ''; });
+  ttToast('모든 조건을 랜덤으로 바꿨어요');
+}
+let gachaResult = null, gachaReady = false, gachaClicked = false, gachaTimer = null;
+
+async function capsuleDraw() {
+  const m = { 학과: 'cap-dept', 구분: 'cap-gubun', 세부: 'cap-sebu', 학점: 'cap-credit', 사이버: 'cap-cyber', 영어: 'cap-eng' };
+  const q = new URLSearchParams();
+  for (const [k, id] of Object.entries(m)) { const v = document.getElementById(id).value; if (v) q.set(k, v); }
+  if (ttTaken.length) q.set('제외', ttTaken.join(','));   // 이미 이수한 과목은 뽑기에서 제외
+  gachaResult = null; gachaReady = false; gachaClicked = false;
+  gachaStageStart();                       // 캡슐 기계 연출 시작(모달 닫고 배경 흐리게)
+  try {
+    const r = await fetch(API + '/api/timetable/capsule?' + q.toString());
+    const d = await r.json();
+    if (d.없음) { gachaAbort('😅 조건에 맞는 과목이 없어요. 조건을 줄여보세요.'); return; }
+    let explanation = '설명을 불러오지 못했어요.';
+    try {                                  // 캐싱되는 /api/course-info 재사용 — 본 과목이면 즉시
+      const e = await fetch(API + '/api/course-info?name=' + encodeURIComponent(d.교과목명));
+      explanation = (await e.json()).explanation || explanation;
+    } catch (e) { /* 그대로 기본 문구 */ }
+    gachaResult = { d, explanation };
+    gachaReady = true;
+    if (gachaClicked) gachaOpen();         // 사용자가 이미 캡슐을 클릭해 대기 중이면 바로 열기
+  } catch (e) { gachaAbort('뽑기에 실패했어요.'); }
+}
+
+// 돔 안 캡슐 데이터 — 이미지(capsule_machine.png)와 동일한 배치. [x비율, y비율, 각도, 색번호]
+const GM_CAPS = [
+  [0.3262, 0.4925, 260, 0], [0.4589, 0.4896, 262, 1], [0.6, 0.4942, 314, 2], [0.7318, 0.489, 228, 3],
+  [0.2075, 0.4173, 355, 0], [0.3355, 0.4179, 202, 1], [0.4757, 0.4185, 315, 2], [0.6075, 0.4179, 7, 3],
+  [0.7495, 0.4133, 30, 0], [0.4813, 0.3439, 126, 1], [0.4056, 0.2861, 74, 2], [0.2617, 0.3491, 299, 3],
+  [0.2514, 0.2746, 174, 0], [0.6701, 0.3549, 263, 1], [0.5215, 0.252, 123, 2], [0.1299, 0.352, 328, 3],
+  [0.1159, 0.2509, 62, 0], [0.6271, 0.2867, 200, 1], [0.857, 0.3682, 260, 2], [0.7467, 0.2514, 151, 3],
+  [0.8551, 0.289, 355, 0],
+];
+const GM_COLORS = ['#C92D44', '#E78294', '#F6C7D1', '#7A1A2B'];
+const GM_TOPS = [                          // 배출 캡슐 윗면 그라데이션 [밝은색, 본색]
+  ['#DB5B72', '#C92D44'], ['#F0A3B2', '#E78294'], ['#FBDEE5', '#F6C7D1'], ['#963243', '#7A1A2B'],
+];
+const GM_CAP_D = 0.157;                    // 캡슐 지름 / 이미지 너비
+const GM_CHUTE_X = 0.497;                  // 배출구 중심 x (이미지 비율)
+
+function gmCapsBuild() {
+  const box = document.getElementById('gm-caps');
+  box.innerHTML = '';
+  const d = (box.clientWidth || 250) * GM_CAP_D;
+  for (const [fx, fy, ang, ci] of GM_CAPS) {
+    const c = document.createElement('div');
+    c.className = 'gm-cap';
+    c.dataset.fx = fx; c.dataset.fy = fy; c.dataset.ci = ci;
+    c.style.width = c.style.height = d + 'px';
+    c.style.left = `calc(${fx * 100}% - ${d / 2}px)`;
+    c.style.top = `calc(${fy * 100}% - ${d / 2}px)`;
+    c.style.background = `linear-gradient(${ang}deg, ${GM_COLORS[ci]} 0 46%, #6D0F1F 46% 54%, #fff 54%)`;
+    box.appendChild(c);
+  }
+}
+
+// 손잡이를 돌린 듯한 연출: 캡슐들이 우르르 부대끼고, 돔 맨 아래(배출구 위) 캡슐이
+// 배출 통로로 빨려 내려가면 위에 있던 캡슐들이 내려앉으며 자리를 채움.
+// 반환값: 뽑힌 캡슐의 색번호 (배출 캡슐 색과 맞추기 위해)
+function gmCapsSpin() {
+  const caps = Array.from(document.querySelectorAll('#gm-caps .gm-cap'));
+  if (!caps.length) return 0;
+  const box = document.getElementById('gm-caps');
+  const boxW = box.clientWidth || 250, boxH = box.clientHeight || 400;
+  // 돔 맨 아래 줄에서 무작위로 하나 선택 (항상 같은 캡슐·같은 색이 나오지 않게)
+  const maxFy = Math.max(...caps.map(c => +c.dataset.fy));
+  const bottomRow = caps.filter(c => +c.dataset.fy > maxFy - 0.04);
+  const pick = bottomRow[Math.floor(Math.random() * bottomRow.length)];
+  // 우르르: 전체가 '같은 방향'으로 흔들리고 개별 편차는 ±2px만 — 서로 떨어져 보이지 않게
+  const jigAll = () => {
+    const dx = Math.random() * 8 - 4, dy = Math.random() * 6 - 3;
+    caps.forEach(c => {
+      c.style.transform = `translate(${dx + Math.random() * 4 - 2}px, ${dy + Math.random() * 4 - 2}px)` +
+                          ` rotate(${Math.random() * 14 - 7}deg)`;
+    });
+  };
+  for (const delay of [0, 260, 520, 780]) setTimeout(jigAll, delay);
+  setTimeout(() => {                       // 뽑힌 캡슐이 배출구 중심 쪽으로 빨려 내려감(clip-path 밖 → 사라짐)
+    const dx = (GM_CHUTE_X - +pick.dataset.fx) * boxW;
+    pick.style.transition = 'transform 0.7s cubic-bezier(.5,0,.8,.4), opacity 0.6s ease 0.15s';
+    pick.style.transform = `translate(${dx}px, ${boxH * 0.16}px) scale(0.75)`;
+    pick.style.opacity = '0';
+  }, 640);
+  setTimeout(() => {                       // 나머지가 함께 아래로 내려앉으며 자리 채움 (편차 ±2px)
+    const drop = 9 + Math.random() * 4;
+    caps.forEach(c => {
+      if (c === pick) return;
+      c.style.transform = `translate(${Math.random() * 4 - 2}px, ${drop + Math.random() * 4 - 2}px)` +
+                          ` rotate(${Math.random() * 14 - 7}deg)`;
+    });
+  }, 1180);
+  return +pick.dataset.ci;
+}
+
+// 캡슐 기계 연출: 돔 안 캡슐이 움직임 → 배출구에서 캡슐이 나와 중앙으로 → 클릭 대기
+function gachaStageStart() {
+  capsuleClose();
+  const st = document.getElementById('gacha-stage');
+  const machine = document.getElementById('gacha-machine');
+  const img = document.getElementById('gacha-machine-img');
+  const cap = document.getElementById('gacha-capsule');
+  const hint = document.getElementById('gacha-hint');
+  cap.className = 'gacha-capsule';
+  hint.classList.remove('show');
+  hint.textContent = '화면을 클릭하세요!';
+  machine.classList.remove('dim');
+  st.style.display = 'flex';
+  requestAnimationFrame(() => {
+    st.classList.add('show');
+    gmCapsBuild();                         // 돔 안 캡슐 채우고 우르르 연출 시작
+    const ci = gmCapsSpin();
+    // 배출 캡슐 윗면 색 = 방금 돔에서 빠진 캡슐 색
+    cap.querySelector('.gc-top').style.background =
+      `linear-gradient(180deg, ${GM_TOPS[ci][0]}, ${GM_TOPS[ci][1]})`;
+    // 캡슐 시작점 = 기계 이미지의 노란 배출구 중심(가로 49.7%, 세로 90.8%) — 중앙 기준 이동량으로 저장
+    // (innerWidth는 스크롤바 포함이라 살짝 왼쪽으로 치우침 → 문서 clientWidth/Height 사용)
+    const r = img.getBoundingClientRect();
+    const vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
+    cap.style.setProperty('--sx', (r.left + r.width * GM_CHUTE_X - vw / 2) + 'px');
+    cap.style.setProperty('--sy', (r.top + r.height * 0.908 - vh / 2) + 'px');
+  });
+  st.onclick = null;
+  clearTimeout(gachaTimer);
+  gachaTimer = setTimeout(() => {          // 안에서 빠진 캡슐이 배출구에서 톡 나와 중앙으로
+    cap.classList.add('show');
+    setTimeout(() => { machine.classList.add('dim'); hint.classList.add('show'); }, 700);
+    st.onclick = () => {
+      if (gachaClicked) return;
+      gachaClicked = true;
+      if (gachaReady) gachaOpen();
+      else hint.textContent = '두구두구… 설명 준비 중! ⏳';
+    };
+  }, 1850);
+}
+
+// 캡슐 열림: 위아래가 서서히 벌어지며 가운데서 빛 + 그 옆 반짝 이펙트 → 결과 팝업(리빌)
+function gachaOpen() {
+  const st = document.getElementById('gacha-stage');
+  const cap = document.getElementById('gacha-capsule');
+  st.onclick = null;
+  document.getElementById('gacha-hint').classList.remove('show');
+  cap.classList.add('open');
+  gachaSparkle();
+  setTimeout(() => {
+    st.classList.remove('show');
+    setTimeout(() => { st.style.display = 'none'; }, 300);
+    capsuleReveal(gachaResult.d, gachaResult.explanation);
+  }, 950);
+}
+
+function gachaAbort(msg) {
+  const st = document.getElementById('gacha-stage');
+  st.onclick = null;
+  st.classList.remove('show');
+  setTimeout(() => { st.style.display = 'none'; }, 300);
+  // 연출만 접고 조건 팝업은 (고른 조건 그대로) 다시 열어 안내 — 조건을 바로 고칠 수 있게
+  document.getElementById('capsule-result').innerHTML = `<div class="capsule-none">${msg}</div>`;
+  document.getElementById('capsule-modal').style.display = 'flex';
+}
+
+function gachaSparkle() {
+  const st = document.getElementById('gacha-stage');
+  for (let i = 0; i < 18; i++) {
+    const s = document.createElement('span');
+    s.className = 'gacha-spark'; s.textContent = '✨';
+    s.style.left = (50 + (Math.random() * 30 - 15)) + '%';
+    s.style.top = (50 + (Math.random() * 30 - 15)) + '%';
+    s.style.animationDelay = (0.1 + Math.random() * 0.4) + 's';
+    st.appendChild(s);
+    setTimeout(() => s.remove(), 1400);
+  }
+}
+
+// 결과 리빌 팝업 — 페이드 인 + 빵빠레. 확인 버튼/아무 키로 페이드 아웃.
+function capsuleReveal(d, explanation) {
+  const tags = [d.이수구분, d.학점 + '학점', d.개설학과, d.사이버 ? '사이버' : '', d.영어 ? '영어강의' : ''].filter(Boolean);
+  document.getElementById('capsule-reveal-body').innerHTML = `
+    <div class="capsule-hit-name">🎉 ${ttEsc(d.교과목명)} 🎉</div>
+    <div class="capsule-hit-tags">${tags.map(t => `<span>${ttEsc(t)}</span>`).join('')}</div>
+    <div class="capsule-explain">${ttEsc(explanation)}</div>
+    <div class="capsule-disc">※ 일반적인 과목 소개이며, 실제 강의계획서와 다를 수 있어요.</div>
+    <button class="capsule-ok" onclick="capsuleRevealClose()">확인</button>`;
+  const rev = document.getElementById('capsule-reveal');
+  rev.style.display = 'flex';
+  requestAnimationFrame(() => rev.classList.add('show'));     // 페이드 인
+  capsuleConfetti();
+  setTimeout(() => document.addEventListener('keydown', capsuleKeyClose), 60);   // 아무 키로 닫기
+}
+function capsuleKeyClose() { capsuleRevealClose(); }
+function capsuleRevealClose() {
+  document.removeEventListener('keydown', capsuleKeyClose);
+  const rev = document.getElementById('capsule-reveal');
+  rev.classList.remove('show');                              // 페이드 아웃
+  setTimeout(() => { rev.style.display = 'none'; }, 320);
+}
+function capsuleConfetti() {
+  const box = document.getElementById('capsule-confetti');
+  box.innerHTML = '';
+  const colors = ['#C8102E', '#E8B65A', '#5A78C8', '#3AA76D', '#E86A9A'];
+  for (let i = 0; i < 30; i++) {
+    const p = document.createElement('span');
+    p.className = 'confetti-piece';
+    p.style.left = (6 + Math.random() * 88) + '%';
+    p.style.background = colors[i % colors.length];
+    p.style.animationDelay = (Math.random() * 0.35) + 's';
+    box.appendChild(p);
+  }
+  setTimeout(() => { box.innerHTML = ''; }, 2000);
+}
+
+// ── 학사일정 ──
+let calendarLoaded = false;
+let allCalendarEvents = [];
+let holidaySet = {};  // { 'YYYY-MM-DD': '휴일명' }
+let currentCalYear = 2026;
+let currentCalMonth = 6;
+
+const PERSONAL_KEY = 'coursemate_personal_events';
+
+function loadPersonalEvents() {
+  try { return JSON.parse(localStorage.getItem(PERSONAL_KEY)) || []; }
+  catch { return []; }
+}
+function savePersonalEvents(list) {
+  localStorage.setItem(PERSONAL_KEY, JSON.stringify(list));
+}
+async function addPersonalEvent() {
+  const textInput = document.getElementById('cal-add-text');
+  const btn = document.getElementById('cal-add-btn');
+  const text = textInput.value.trim();
+  if (!text) { alert('일정을 입력해주세요. (예: 6/22 종강)'); return; }
+
+  btn.disabled = true;
+  btn.textContent = '분석 중...';
+
+  try {
+    const res = await fetch(API + '/api/calendar/parse-event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) throw new Error(`서버 오류 (${res.status})`);
+    const parsed = await res.json();
+
+    const list = loadPersonalEvents();
+    list.push({ id: Date.now(), start: parsed.date, end: parsed.date, event: parsed.event, type: 'personal' });
+    savePersonalEvents(list);
+    textInput.value = '';
+    renderCalendarGrid();
+  } catch (err) {
+    alert('일정을 인식하지 못했어요. 날짜와 내용을 다시 확인해주세요.\n(' + err.message + ')');
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '+ 추가';
+  }
+}
+
+function deletePersonalEvent(id) {
+  const list = loadPersonalEvents().filter(e => e.id !== id);
+  savePersonalEvents(list);
+  renderCalendarGrid();
+}
+
+function formatDateLabel(startISO, endISO) {
+  const s = new Date(startISO), e = new Date(endISO);
+  const fmt = (d) => `${d.getMonth() + 1}.${d.getDate()}`;
+  return startISO === endISO ? fmt(s) : `${fmt(s)} ~ ${fmt(e)}`;
+}
+
+async function loadCalendar() {
+  if (calendarLoaded) return;
+  calendarLoaded = true;
+
+  const ddayRes = await fetch(API + '/api/calendar/upcoming?limit=8');
+  const ddayData = await ddayRes.json();
+  const track = document.getElementById('dday-track');
+  const cardsHtml = ddayData.events.map(e => `
+    <div class="dday-card">
+      <span class="dday-badge ${e.d_day <= 0 ? 'today' : ''}">${e.d_day > 0 ? 'D-' + e.d_day : e.d_day === 0 ? 'D-DAY' : '진행 중'}</span>
+      <div class="dday-event">${e.event}</div>
+      <div class="dday-date">${formatDateLabel(e.start, e.end)}</div>
+    </div>
+  `).join('');
+  // 끊김 없이 이어지도록 동일 목록을 한 번 더 이어붙임
+  track.innerHTML = cardsHtml + cardsHtml;
+
+  const allRes = await fetch(API + '/api/calendar/events');
+  allCalendarEvents = (await allRes.json()).events;
+
+  const holRes = await fetch(API + '/api/calendar/holidays');
+  const holidays = (await holRes.json()).holidays;
+  holidaySet = {};
+  holidays.forEach(h => { holidaySet[h.date] = h.name; });
+
+  renderCalendarList();
+  renderCalendarLegend();
+
+  if (ddayData.events.length > 0) {
+    const first = new Date(ddayData.events[0].start);
+    currentCalYear = first.getFullYear();
+    currentCalMonth = first.getMonth() + 1;
+  }
+  renderCalendarGrid();
+}
+
+function renderCalendarList() {
+  const byMonth = {};
+  allCalendarEvents.forEach(e => { (byMonth[e.month_label] ||= []).push(e); });
+  const list = document.getElementById('calendar-list');
+  list.innerHTML = Object.entries(byMonth).map(([month, evts]) => `
+    <div class="cal-month">
+      <h3>${month}</h3>
+      ${evts.map(e => `
+        <div class="cal-row">
+          <div class="cal-date">${formatDateLabel(e.start, e.end)}</div>
+          <div class="cal-event">${e.event}</div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function setCalendarMode(mode) {
+  document.getElementById('cal-toggle-list').classList.toggle('active', mode === 'list');
+  document.getElementById('cal-toggle-grid').classList.toggle('active', mode === 'grid');
+  document.getElementById('calendar-list').style.display = mode === 'list' ? '' : 'none';
+  document.getElementById('calendar-grid-wrap').style.display = mode === 'grid' ? '' : 'none';
+}
+
+function shiftMonth(delta) {
+  currentCalMonth += delta;
+  if (currentCalMonth > 12) { currentCalMonth = 1; currentCalYear++; }
+  if (currentCalMonth < 1) { currentCalMonth = 12; currentCalYear--; }
+  renderCalendarGrid();
+}
+
+const EVENT_CATEGORIES = [
+  { test: /수강신청|수강변경|수강과목/, name: '수강신청', color: '#5B8DEF' },
+  { test: /성적/, name: '성적처리', color: '#E2984D' },
+  { test: /고사/, name: '시험기간', color: '#D07575' },
+  { test: /신청/, name: '각종 신청', color: '#7BAF6E' },
+  { test: /강의평가/, name: '강의평가', color: '#4FA8A8' },
+];
+function categorizeEvent(name) {
+  for (const c of EVENT_CATEGORIES) if (c.test.test(name)) return c;
+  return { name: '기타', color: '#9B8AC4' };
+}
+
+function renderCalendarLegend() {
+  const cats = [...EVENT_CATEGORIES, { name: '기타', color: '#9B8AC4' }, { name: '내 일정', color: '#5DA391' }];
+  document.getElementById('cal-legend').innerHTML = cats.map(c => `
+    <span class="cal-legend-item"><span class="cal-legend-dot" style="background:${c.color}"></span>${c.name}</span>
+  `).join('');
+}
+
+const LONG_EVENT_THRESHOLD_DAYS = 10;
+
+function eventDuration(e) {
+  const s = new Date(e.start), en = new Date(e.end);
+  return Math.round((en - s) / 86400000) + 1;
+}
+
+function renderLongEventsPanel(combined) {
+  const monthStart = new Date(currentCalYear, currentCalMonth - 1, 1);
+  const monthEnd = new Date(currentCalYear, currentCalMonth, 0);
+  const monthStartISO = toISO(monthStart), monthEndISO = toISO(monthEnd);
+
+  const longThisMonth = combined.filter(e =>
+    eventDuration(e) > LONG_EVENT_THRESHOLD_DAYS &&
+    e.start <= monthEndISO && e.end >= monthStartISO
+  );
+
+  const panel = document.getElementById('cal-long-events');
+  if (longThisMonth.length === 0) { panel.innerHTML = ''; return; }
+
+  panel.innerHTML = `
+    <div class="cal-long-title">📌 이번 달 진행 중인 신청 기간</div>
+    <div class="cal-long-box">
+      ${longThisMonth.map(e => {
+        const color = e.type === 'personal' ? '#5DA391' : categorizeEvent(e.event).color;
+        return `
+          <div class="cal-long-row">
+            <span class="cal-long-dot" style="background:${color}"></span>
+            <span class="cal-long-name">${e.event}</span>
+            <span class="cal-long-range">${formatDateLabel(e.start, e.end)}</span>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function toISO(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// 겹치지 않는 이벤트는 같은 줄(레인)에, 겹치면 다음 줄로 내려서 배치
+function assignLanes(weekEvents) {
+  const sorted = [...weekEvents].sort((a, b) =>
+    a.start_col - b.start_col || (b.end_col - b.start_col) - (a.end_col - a.start_col)
+  );
+  const lanes = [];
+  const result = [];
+  sorted.forEach(ev => {
+    let laneIdx = 0;
+    while (true) {
+      if (!lanes[laneIdx]) lanes[laneIdx] = [];
+      const conflict = lanes[laneIdx].some(e => !(ev.end_col < e.start_col || ev.start_col > e.end_col));
+      if (!conflict) { lanes[laneIdx].push(ev); result.push({ ...ev, lane: laneIdx }); break; }
+      laneIdx++;
+    }
+  });
+  return result;
+}
+
+function renderCalendarGrid() {
+  document.getElementById('cal-nav-label').textContent = `${currentCalYear}년 ${currentCalMonth}월`;
+
+  const personalEvents = loadPersonalEvents();
+  const combined = [
+    ...allCalendarEvents.map(e => ({ ...e, type: 'official' })),
+    ...personalEvents,
+  ];
+
+  renderLongEventsPanel(combined);
+  const gridEvents = combined.filter(e => eventDuration(e) <= LONG_EVENT_THRESHOLD_DAYS);
+
+  const firstOfMonth = new Date(currentCalYear, currentCalMonth - 1, 1);
+  const lastOfMonth = new Date(currentCalYear, currentCalMonth, 0);
+  const gridStart = new Date(firstOfMonth);
+  gridStart.setDate(gridStart.getDate() - gridStart.getDay());  // 그 주의 일요일로 이동
+  const gridEnd = new Date(gridStart);
+  gridEnd.setDate(gridEnd.getDate() + 41);  // 항상 6주(42일) 고정 → 달마다 달력 크기가 달라지지 않게
+
+  const todayStr = toISO(new Date());
+  const weeksContainer = document.getElementById('cal-weeks');
+  weeksContainer.innerHTML = '';
+
+  let cursor = new Date(gridStart);
+  let weekIndex = 0;
+  while (cursor <= gridEnd) {
+    const weekDates = [];
+    for (let i = 0; i < 7; i++) {
+      weekDates.push(new Date(cursor));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    const weekStartISO = toISO(weekDates[0]), weekEndISO = toISO(weekDates[6]);
+
+    // 이 주와 겹치는 이벤트만 추려서 시작/끝 컬럼(0~6) 계산 (장기 신청기간은 별도 패널에서 처리하므로 제외)
+    const weekEvents = gridEvents
+      .filter(e => e.start <= weekEndISO && e.end >= weekStartISO)
+      .map(e => {
+        const startCol = e.start < weekStartISO ? 0 : weekDates.findIndex(d => toISO(d) === e.start);
+        const endCol = e.end > weekEndISO ? 6 : weekDates.findIndex(d => toISO(d) === e.end);
+        return { ...e, start_col: startCol, end_col: endCol };
+      });
+    const lanedEvents = assignLanes(weekEvents);
+    const maxLane = lanedEvents.reduce((m, e) => Math.max(m, e.lane), -1);
+
+    const weekEl = document.createElement('div');
+    weekEl.className = 'cal-week' + (weekIndex % 2 === 1 ? ' stripe' : '');
+    weekIndex++;
+    weekEl.style.gridTemplateRows = `auto repeat(${Math.max(2, maxLane + 1)}, minmax(26px, auto))`;
+
+    weekDates.forEach((d, i) => {
+      const iso = toISO(d);
+      const inMonth = d.getMonth() === currentCalMonth - 1;
+      const isHoliday = !!holidaySet[iso];
+      const classes = ['cal-daynum'];
+      if (i === 0 || isHoliday) classes.push('sun');
+      else if (i === 6) classes.push('sat');
+      if (iso === todayStr) classes.push('today');
+      const cell = document.createElement('div');
+      cell.className = classes.join(' ');
+      cell.style.gridColumn = String(i + 1);
+      cell.style.opacity = inMonth ? '1' : '0.3';
+      cell.textContent = d.getDate();
+      cell.title = isHoliday ? holidaySet[iso] : '';
+      weekEl.appendChild(cell);
+    });
+
+    lanedEvents.forEach(ev => {
+      const bar = document.createElement('div');
+      const color = ev.type === 'personal' ? '#5DA391' : categorizeEvent(ev.event).color;
+      bar.className = 'cal-bar';
+      bar.style.background = color;
+      bar.style.gridColumn = `${ev.start_col + 1} / ${ev.end_col + 2}`;
+      bar.style.gridRow = String(ev.lane + 2);
+      bar.title = ev.event;
+
+      if (ev.type === 'personal') {
+        bar.innerHTML = `<span class="cal-bar-text">${ev.event}</span><span class="cal-bar-del" title="삭제">×</span>`;
+        bar.querySelector('.cal-bar-del').onclick = (evt) => {
+          evt.stopPropagation();
+          if (confirm(`'${ev.event}' 일정을 삭제할까요?`)) deletePersonalEvent(ev.id);
+        };
+      } else {
+        bar.textContent = ev.event;
+      }
+      weekEl.appendChild(bar);
+    });
+
+    weeksContainer.appendChild(weekEl);
+  }
+}
+
+// 데이터 로드는 switchView() 안에서 통합 처리됨 (캐러셀 버튼/네비 탭 어느 경로든 동일하게 동작)
+
+// ── 수강편람 원문 뷰어 ──
+let manualLoaded = false;
+
+async function loadManual() {
+  if (manualLoaded) return;
+  manualLoaded = true;
+  const frame = document.getElementById('manual-pdf-frame');
+  const errorBox = document.getElementById('manual-error');
+  try {
+    const res = await fetch(API + '/api/manual/info');
+    const data = await res.json();
+    if (data.error) {
+      frame.style.display = 'none';
+      errorBox.style.display = '';
+      errorBox.textContent = data.error;
+      return;
+    }
+    frame.src = API + '/api/manual/file';
+  } catch (err) {
+    frame.style.display = 'none';
+    errorBox.style.display = '';
+    errorBox.textContent = '수강편람을 불러오지 못했어요.';
+    console.error(err);
+  }
+}
+
+// 네비게이션에서 "수강편람" 뷰로 들어갈 때 최초 1회 로드
+// 네비게이션/캐러셀 어느 경로로 들어와도 switchView()가 로드를 통합 처리함
+
+// ── 이수체계도 ──
+let departmentsData = {};
+
+async function loadDepartments() {
+  const deptSelect = document.getElementById('dept-select');
+  try {
+    const res = await fetch(API + '/api/departments');
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`서버 오류 (${res.status}): ${errText.slice(0, 200)}`);
+    }
+    departmentsData = await res.json();
+
+    if (Object.keys(departmentsData).length === 0) {
+      deptSelect.innerHTML = '<option>curriculum_excels 폴더에 파일이 없어요</option>';
+      return;
+    }
+
+    deptSelect.innerHTML = '';
+    Object.keys(departmentsData).sort().forEach(dept => {
+      const opt = document.createElement('option');
+      opt.value = dept; opt.textContent = dept;
+      deptSelect.appendChild(opt);
+    });
+    updateYears();
+  } catch (err) {
+    deptSelect.innerHTML = `<option>불러오기 실패: ${err.message}</option>`;
+    console.error('학과 목록 로딩 실패:', err);
+  }
+}
+
+function updateYears() {
+  const dept = document.getElementById('dept-select').value;
+  const yearSelect = document.getElementById('year-select');
+  yearSelect.innerHTML = '';
+  (departmentsData[dept] || []).forEach(y => {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y + '학년도';
+    yearSelect.appendChild(opt);
+  });
+  loadRoadmap();
+}
+
+async function loadRoadmap() {
+  const dept = document.getElementById('dept-select').value;
+  const year = document.getElementById('year-select').value;
+  if (!dept || !year) return;
+
+  const res = await fetch(`${API}/api/roadmap?department=${encodeURIComponent(dept)}&year=${year}`);
+  const data = await res.json();
+  const container = document.getElementById('roadmap-container');
+
+  if (data.error) {
+    container.innerHTML = `<div class="empty-state">${data.error}</div>`;
+    return;
+  }
+
+  // 범례
+  const legend = document.getElementById('legend');
+  legend.innerHTML = '';
+  Object.values(data.categories).forEach(cat => {
+    const span = document.createElement('span');
+    span.className = 'legend-item';
+    span.style.backgroundColor = hexToRgba(cat.color, 0.14);
+    span.style.color = cat.color;
+    span.textContent = cat.name;
+    legend.appendChild(span);
+  });
+
+  // 로드맵 그리드
+  container.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.className = 'roadmap-grid';
+  grid.style.gridTemplateColumns = `repeat(${data.semesters.length}, 1fr)`;
+  data.semesters.forEach(sem => {
+    const col = document.createElement('div');
+    col.className = 'sem-col';
+    col.innerHTML = `<div class="sem-label">${sem.semester}</div>`;
+    sem.courses.forEach(course => {
+      const card = document.createElement('div');
+      card.className = 'course-card';
+      card.style.backgroundColor = hexToRgba(course.color, 0.14);
+      card.innerHTML = `${course.name}<span class="cat">${course.categoryName} · ${course.credit}학점</span>`;
+      card.onclick = () => showCourseInfo(course.name);
+      col.appendChild(card);
+    });
+    grid.appendChild(col);
+  });
+  container.appendChild(grid);
+}
+
+document.getElementById('dept-select').addEventListener('change', updateYears);
+document.getElementById('year-select').addEventListener('change', loadRoadmap);
+
+// ── 과목 설명 팝오버 (가운데 모달) ──
+async function showCourseInfo(name) {
+  document.getElementById('popover-title').textContent = '📖 ' + name;
+  document.getElementById('popover-body').textContent = '불러오는 중...';
+  document.getElementById('course-popover-backdrop').classList.add('open');
+
+  const res = await fetch(API + '/api/course-info?name=' + encodeURIComponent(name));
+  const data = await res.json();
+  document.getElementById('popover-body').textContent = data.explanation;
+}
+function closePopover() { document.getElementById('course-popover-backdrop').classList.remove('open'); }
+
+// ── 우측 사이드 채팅 패널 ──
+function toggleChat() {
+  switchView('chat');
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const question = input.value.trim();
+  if (!question) return;
+  input.value = '';
+
+  const messages = document.getElementById('chat-messages');
+  messages.innerHTML += `<div class="msg user">${escapeHtml(question)}</div>`;
+  messages.innerHTML += `<div class="msg bot" id="pending">생각 중...</div>`;
+  messages.scrollTop = messages.scrollHeight;
+
+  try {
+    const res = await fetch(API + '/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({question})
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`서버 오류 (${res.status}): ${errText.slice(0, 300)}`);
+    }
+
+    const data = await res.json();
+    const pending = document.getElementById('pending');
+    const sourcesText = (data.sources || []).map(s => s.section_path).slice(0,2).join(' / ');
+    const answerHtml = (typeof marked !== 'undefined')
+      ? marked.parse(data.answer || '')
+      : escapeHtml(data.answer || '').replace(/\n/g, '<br>');
+    pending.outerHTML = `<div class="msg bot"><div class="md">${answerHtml}</div><div class="sources">근거: ${sourcesText}</div></div>`;
+  } catch (err) {
+    const pending = document.getElementById('pending');
+    if (pending) {
+      pending.outerHTML = `<div class="msg bot" style="color:#B23B3B;">⚠️ 오류가 발생했어요: ${err.message}<br><span style="font-size:11px;opacity:0.7;">(서버 콘솔의 에러 로그도 함께 확인해주세요)</span></div>`;
+    }
+    console.error('챗봇 요청 실패:', err);
+  }
+  messages.scrollTop = messages.scrollHeight;
+}
+
+loadDepartments();
+
+// ── 기능 쇼케이스 캐러셀 (자동 슬라이드, 항상 같은 방향으로 무한 루프) ──
+(function () {
+  const track = document.querySelector('.showcase-track');
+  const dotsWrap = document.getElementById('showcase-dots');
+  if (!track || !dotsWrap) return;
+
+  const realSlides = Array.from(track.children);
+  const total = realSlides.length; // 실제 슬라이드 개수 (점 개수 기준)
+  const AUTO_MS = 4500; // 자동으로 넘어가는 간격
+
+  // 마지막에서 첫 번째로 돌아갈 때도 계속 왼쪽으로 이어지도록,
+  // 첫 슬라이드를 복제해서 맨 뒤에 하나 더 붙여둔다 (총 total+1개).
+  const clone = realSlides[0].cloneNode(true);
+  clone.setAttribute('aria-hidden', 'true');
+  track.appendChild(clone);
+
+  let idx = 0;
+  let timer = null;
+
+  realSlides.forEach((_, i) => {
+    const dot = document.createElement('button');
+    dot.className = 'showcase-dot' + (i === 0 ? ' active' : '');
+    dot.setAttribute('aria-label', `기능 ${i + 1}번째 보기`);
+    dot.addEventListener('click', () => goTo(i, true));
+    dotsWrap.appendChild(dot);
+  });
+  const dots = Array.from(dotsWrap.children);
+
+  function render(withTransition) {
+    track.style.transition = withTransition ? '' : 'none';
+    track.style.transform = `translateX(-${idx * 100}%)`;
+    dots.forEach((d, i) => d.classList.toggle('active', i === (idx % total)));
+    if (!withTransition) {
+      // transition 끈 상태로 리플로우 강제 발생시킨 뒤 다시 켜줌 (다음 애니메이션이 끊기지 않게)
+      void track.offsetHeight;
+      track.style.transition = '';
+    }
+  }
+
+  function goTo(i, manual) {
+    idx = i;
+    render(true);
+    if (manual) restart();
+  }
+
+  function next() {
+    idx += 1;
+    render(true);
+    if (idx === total) {
+      // 복제된 첫 슬라이드까지 왼쪽으로 다 이동한 뒤, 애니메이션 없이 진짜 첫 슬라이드로 순간 복귀
+      track.addEventListener('transitionend', function onEnd() {
+        track.removeEventListener('transitionend', onEnd);
+        idx = 0;
+        render(false);
+      }, { once: true });
+    }
+  }
+
+  function restart() {
+    if (timer) clearInterval(timer);
+    timer = setInterval(next, AUTO_MS);
+  }
+
+  restart();
+
+  // 마우스를 올리면 잠깐 멈추고, 벗어나면 다시 자동 재생
+  const carousel = document.querySelector('.showcase-carousel');
+  carousel.addEventListener('mouseenter', () => { if (timer) clearInterval(timer); });
+  carousel.addEventListener('mouseleave', restart);
+})();
+
+// ── 시간표 생성 ──
+let ttMetaLoaded = false;
+let ttWant = [];
+let ttPinned = [];              // pin: [{학수번호, 분반, 시간, 교과목명}] — 다시 생성해도 유지할 고정 과목
+let ttEditMode = false;         // 직접 편집 모드 여부
+let ttEditTable = [];           // 편집 중인 시간표(과목 배열) — 독립 편집(재계산과 분리)
+let ttEditOrig = [];            // 편집 시작 스냅샷(초기화용)
+let ttEditUndo = [];            // 되돌리기 스택
+let ttSearchResults = [];       // 과목 검색 결과(추가용)
+let ttGridGeom = null;          // 그리드 좌표(시작시각·시간당 px) — 검색 미리보기 위치 계산용
+let ttWantSpec = {};            // {과목명: {교수, 분반}} — 교수·분반 지정(빈 값=상관없음)
+let ttSectionCache = {};        // {과목명: [{분반,교수,시간}]} — 지정 팝업용 분반 목록 캐시
+let ttTaken = [];
+let ttAvoid = [];               // 안 들을 과목 (하드 조건 — 후보에서 통째 제외)
+let ttTakenDetail = {};         // 성적표 업로드로 얻은 {과목명: {과목,학점,성적}} — 졸업 진단 정확도용
+let ttAllNames = [];
+
+function ttListOf(kind) { return kind === 'want' ? ttWant : kind === 'avoid' ? ttAvoid : ttTaken; }
+
+function ttEsc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// 짧게 떴다 사라지는 알림 (복사됨·추가됨 등에 공용 사용)
+function ttToast(msg) {
+  let t = document.getElementById('tt-toast');
+  if (!t) { t = document.createElement('div'); t.id = 'tt-toast'; t.className = 'tt-toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 1600);
+}
+
+// 학수번호(없으면 과목명) 클립보드 복사 — 수강신청 홈페이지에 바로 붙여넣기용
+function ttCopyFromBtn(btn) {
+  const text = btn.dataset.copy || '';
+  const label = btn.dataset.label || text;
+  navigator.clipboard.writeText(text)
+    .then(() => ttToast(`복사됨: ${label} (${text})`))
+    .catch(() => ttToast('복사 실패 — 직접 선택해 복사해주세요'));
+}
+
+async function loadTimetableMeta() {
+  if (ttMetaLoaded) return;
+  ttMetaLoaded = true;
+  try {
+    const res = await fetch(API + '/api/timetable/meta');
+    const data = await res.json();
+    const sel = document.getElementById('tt-dept');
+    sel.innerHTML = data.학과들.map(d =>
+      `<option value="${ttEsc(d)}" ${d === data.기본학과 ? 'selected' : ''}>${ttEsc(d)}</option>`
+    ).join('');
+    ttAllNames = data.과목명들 || [];
+  } catch (err) {
+    console.error('시간표 메타 로드 실패', err);
+  }
+}
+
+function ttAddTag(kind) {
+  const input = document.getElementById(`tt-${kind}-input`);
+  const val = input.value.trim();
+  if (!val) return;
+  const list = ttListOf(kind);
+  if (!list.includes(val)) list.push(val);
+  input.value = '';
+  ttRenderTags(kind);
+  ttHideSuggestions(kind);
+}
+
+function ttRemoveTag(kind, idx) {
+  const removed = ttListOf(kind).splice(idx, 1)[0];
+  if (kind === 'want') delete ttWantSpec[removed];   // 지정한 교수·분반도 함께 제거
+  ttRenderTags(kind);
+}
+
+// ── 희망과목 교수·분반 지정 팝업 ──────────────────────────────────
+// 태그를 누르면 그 과목의 개설 분반(교수·시간)을 불러와 드롭다운으로 고르게 한다.
+// 분반은 '상관없음'이 기본. 교수를 고르면 분반 목록이 그 교수 분반으로 좁혀진다.
+async function ttOpenSpec(idx) {
+  const name = ttWant[idx];
+  if (name == null) return;
+  let secs = ttSectionCache[name];
+  if (!secs) {
+    try {
+      const res = await fetch(API + '/api/timetable/course_sections?name=' + encodeURIComponent(name));
+      secs = (await res.json()).분반들 || [];
+    } catch (e) { secs = []; }
+    ttSectionCache[name] = secs;
+  }
+  ttRenderSpecPopup(name, secs);
+}
+
+function ttRenderSpecPopup(name, secs) {
+  const sp = ttWantSpec[name] || {};
+  const profs = [...new Set(secs.map(s => s.교수).filter(p => p && p !== '미정'))];
+  let el = document.getElementById('tt-spec-pop');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'tt-spec-pop';
+    el.className = 'tt-spec-backdrop';
+    el.addEventListener('click', e => { if (e.target === el) el.style.display = 'none'; });
+    document.body.appendChild(el);
+  }
+  el._name = name;
+  el._secs = secs;
+  const profOpts = ['<option value="">상관없음</option>']
+    .concat(profs.map(p => `<option value="${ttEsc(p)}" ${sp.교수 === p ? 'selected' : ''}>${ttEsc(p)}</option>`))
+    .join('');
+  const 중요도 = sp.중요도 || '';
+  el.innerHTML = `<div class="tt-spec-card">
+      <div class="tt-spec-title">${ttEsc(name)}</div>
+      <div class="tt-spec-sub">얼마나 꼭 듣고 싶은지, 원하는 교수·분반을 정하세요</div>
+      <label class="tt-spec-row"><span>넣기</span><select id="tt-spec-imp">
+        <option value="" ${중요도 !== '필수' ? 'selected' : ''}>되도록 넣기</option>
+        <option value="필수" ${중요도 === '필수' ? 'selected' : ''}>꼭 넣기 (다른 희망과 겹치면 우선)</option>
+      </select></label>
+      ${secs.length ? '' : '<div class="tt-hint">이번 학기 개설 분반 정보가 없어요 — 교수·분반은 상관없음만 가능해요.</div>'}
+      <label class="tt-spec-row"><span>교수</span><select id="tt-spec-prof">${profOpts}</select></label>
+      <label class="tt-spec-row"><span>분반</span><select id="tt-spec-sec"></select></label>
+      <div class="tt-spec-btns">
+        <button type="button" class="tt-spec-clear" onclick="ttClearSpec()">지정 해제</button>
+        <button type="button" class="tt-spec-apply" onclick="ttApplySpec()">적용</button>
+      </div>
+    </div>`;
+  el.style.display = 'flex';
+  document.getElementById('tt-spec-prof').addEventListener('change', () => ttFillSecOptions());
+  ttFillSecOptions(sp.분반);
+}
+
+// 분반 드롭다운 채우기 — 교수가 선택돼 있으면 그 교수 분반만 보여준다.
+function ttFillSecOptions(preselect) {
+  const el = document.getElementById('tt-spec-pop');
+  const secs = el._secs || [];
+  const prof = document.getElementById('tt-spec-prof').value;
+  const avail = prof ? secs.filter(s => s.교수 === prof) : secs;
+  const sel = document.getElementById('tt-spec-sec');
+  const cur = preselect != null ? preselect : sel.value;
+  sel.innerHTML = ['<option value="">상관없음</option>'].concat(avail.map(s => {
+    const label = `${ttEsc(s.분반)}분반 · ${ttEsc(s.교수)}${s.시간 ? ' · ' + ttEsc(s.시간) : ''}`;
+    return `<option value="${ttEsc(s.분반)}" ${String(cur) === String(s.분반) ? 'selected' : ''}>${label}</option>`;
+  })).join('');
+}
+
+function ttApplySpec() {
+  const el = document.getElementById('tt-spec-pop');
+  const name = el._name;
+  const 교수 = document.getElementById('tt-spec-prof').value;
+  const 분반 = document.getElementById('tt-spec-sec').value;
+  const 중요도 = document.getElementById('tt-spec-imp').value;
+  if (교수 || 분반 || 중요도) ttWantSpec[name] = { 교수, 분반, 중요도 };
+  else delete ttWantSpec[name];
+  el.style.display = 'none';
+  ttRenderTags('want');
+}
+
+function ttClearSpec() {
+  const el = document.getElementById('tt-spec-pop');
+  delete ttWantSpec[el._name];
+  el.style.display = 'none';
+  ttRenderTags('want');
+}
+
+function ttRenderTags(kind) {
+  const list = ttListOf(kind);
+  const wrap = document.getElementById(`tt-${kind}-tags`);
+  if (kind === 'want') {
+    // 희망 과목: 태그 몸통 클릭 → 교수·분반 지정 팝업, ×만 제거. 지정하면 배지로 표시.
+    wrap.innerHTML = list.map((name, i) => {
+      const sp = ttWantSpec[name] || {};
+      const badge = [sp.중요도 === '필수' ? '꼭' : '', sp.교수, sp.분반 ? sp.분반 + '분반' : '']
+        .filter(Boolean).join(' · ');
+      return `<span class="tt-tag tt-tag-want">` +
+        `<span class="tt-tag-body" onclick="ttOpenSpec(${i})" title="클릭하면 교수·분반을 지정할 수 있어요">` +
+        `${ttEsc(name)}${badge ? ` <span class="tt-tag-badge">${ttEsc(badge)}</span>` : ''} ⚙</span>` +
+        `<span class="tt-tag-x" onclick="ttRemoveTag('want',${i})" title="제거">×</span></span>`;
+    }).join('');
+    return;
+  }
+  if (kind === 'taken') {
+    // 이수 과목: 태그 몸통 클릭은 무반응(실수 방지), × 버튼을 눌러야만 개별 삭제.
+    wrap.innerHTML = list.map((name, i) =>
+      `<span class="tt-tag tt-tag-plain">${ttEsc(name)}` +
+      `<span class="tt-tag-x" onclick="ttDelTaken(${i})" title="이 과목만 제거">×</span></span>`).join('');
+    return;
+  }
+  wrap.innerHTML = list.map((name, i) =>
+    `<span class="tt-tag" onclick="ttRemoveTag('${kind}',${i})" title="클릭하면 제거돼요">${ttEsc(name)}<span class="tt-tag-x">×</span></span>`
+  ).join('');
+}
+
+function ttDelTaken(i) {
+  const name = ttTaken[i];
+  if (name === undefined) return;
+  ttTaken.splice(i, 1);
+  delete ttTakenDetail[name];
+  ttRenderTags('taken');
+  ttToast(`이수 과목에서 '${name}'을(를) 뺐어요`);
+}
+
+function ttClearTaken() {
+  if (!ttTaken.length) { ttToast('이수 과목이 없어요'); return; }
+  ttTaken = [];
+  ttTakenDetail = {};
+  ttRenderTags('taken');
+  document.getElementById('tt-upload-status').textContent = '';
+  ttToast('이수 과목을 모두 지웠어요');
+}
+
+function ttHideSuggestions(kind) {
+  document.getElementById(`tt-${kind}-suggest`).style.display = 'none';
+}
+
+function ttRenderSuggestions(kind, matches) {
+  const list = document.getElementById(`tt-${kind}-suggest`);
+  list.innerHTML = '';
+  if (!matches.length) { list.style.display = 'none'; return; }
+  matches.forEach(name => {
+    const item = document.createElement('div');
+    item.className = 'tt-suggest-item';
+    item.textContent = name;
+    // mousedown(+preventDefault)을 써야 input이 blur되기 전에 클릭이 확정됨
+    item.addEventListener('mousedown', e => { e.preventDefault(); ttPickSuggestion(kind, name); });
+    list.appendChild(item);
+  });
+  list.style.display = 'block';
+}
+
+function ttPickSuggestion(kind, name) {
+  const list = ttListOf(kind);
+  if (!list.includes(name)) list.push(name);
+  ttRenderTags(kind);
+  document.getElementById(`tt-${kind}-input`).value = '';
+  ttHideSuggestions(kind);
+}
+
+function ttOnInputSearch(kind) {
+  const input = document.getElementById(`tt-${kind}-input`);
+  const q = input.value.trim();
+  if (!q || !ttAllNames.length) { ttHideSuggestions(kind); return; }
+  const starts = [], contains = [];
+  for (const name of ttAllNames) {
+    if (name === q) continue;
+    if (name.startsWith(q)) starts.push(name);
+    else if (contains.length < 20 && name.includes(q)) contains.push(name);
+    if (starts.length >= 8) break;
+  }
+  ttRenderSuggestions(kind, starts.concat(contains).slice(0, 8));
+}
+
+['want', 'taken', 'avoid'].forEach(kind => {
+  const input = document.getElementById(`tt-${kind}-input`);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); ttAddTag(kind); }
+    if (e.key === 'Escape') { ttHideSuggestions(kind); }
+  });
+  input.addEventListener('input', () => ttOnInputSearch(kind));
+  input.addEventListener('blur', () => setTimeout(() => ttHideSuggestions(kind), 150));
+});
+
+async function ttUploadTranscript(event) {
+  // 서버(parse_grades)가 파싱 — 학점·성적까지 인식해 졸업 진단(이수학점)이 정확해진다.
+  const file = event.target.files[0];
+  const status = document.getElementById('tt-upload-status');
+  if (!file) return;
+  status.textContent = '읽는 중...';
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch(API + '/api/timetable/parse_grades', { method: 'POST', body: fd });
+    if (!res.ok) throw new Error(`서버 오류 (${res.status})`);
+    const data = await res.json();
+    if (data.error) { status.textContent = data.error; return; }
+    let added = 0;
+    (data.상세 || []).forEach(d => {
+      ttTakenDetail[d.과목] = d;
+      if (!ttTaken.includes(d.과목)) { ttTaken.push(d.과목); added++; }
+    });
+    ttRenderTags('taken');
+    status.textContent = added
+      ? `${added}개 과목 추가됨 · 총 ${data.총학점}학점 인식 (졸업 진단에 반영돼요)`
+      : '새로 추가된 과목이 없어요 (이미 다 들어있거나 전부 미이수 처리됨).';
+  } catch (err) {
+    console.error(err);
+    status.textContent = '엑셀을 읽지 못했어요. (' + err.message + ')';
+  } finally {
+    event.target.value = '';
+  }
+}
+
+let ttBlocks = [];  // {days:['월','화'], start:'09:00', end:'10:30'}
+
+function ttAddBlock() {
+  const days = Array.from(document.querySelectorAll('.tt-block-days input:checked')).map(el => el.value);
+  const start = document.getElementById('tt-block-start').value;
+  const end = document.getElementById('tt-block-end').value;
+  if (!days.length) { alert('요일을 하나 이상 선택해주세요.'); return; }
+  if (!start || !end) { alert('시작/종료 시간을 입력해주세요.'); return; }
+  if (start >= end) { alert('종료 시간이 시작 시간보다 늦어야 해요.'); return; }
+  ttBlocks.push({ days, start, end });
+  document.querySelectorAll('.tt-block-days input:checked').forEach(el => el.checked = false);
+  ttRenderBlocks();
+}
+
+function ttRemoveBlock(idx) {
+  ttBlocks.splice(idx, 1);
+  ttRenderBlocks();
+}
+
+function ttRenderBlocks() {
+  const wrap = document.getElementById('tt-blocks-tags');
+  wrap.innerHTML = ttBlocks.map((b, i) =>
+    `<span class="tt-tag">${b.days.join(',')} ${b.start}~${b.end}<button onclick="ttRemoveBlock(${i})">×</button></span>`
+  ).join('');
+}
+
+function ttBlocksToStrings() {
+  return ttBlocks.map(b => `${b.days.join(' ')} ${b.start}~${b.end}`);
+}
+
+// 점심시간 비우기 — 고른 시간대를 월~금 차단시간으로 변환(차단시간 하드제약 재활용)
+function ttLunchBlock() {
+  const v = document.getElementById('tt-lunch').value;
+  return v ? [`월 화 수 목 금 ${v}`] : [];
+}
+
+function ttCollectBody() {
+  // 현재 폼 상태 → 서버 프로필. 시간표 생성·자연어 조정이 함께 사용한다.
+  return {
+    학과: document.getElementById('tt-dept').value,
+    학번: parseInt(document.getElementById('tt-yr').value, 10),
+    학년: parseInt(document.getElementById('tt-grade').value, 10),
+    선호: document.getElementById('tt-prefer').value,
+    목표학점: parseInt(document.getElementById('tt-credits').value, 10) || 18,
+    전공개수: parseInt(document.getElementById('tt-major-limit').value, 10) || 0,
+    교양개수: parseInt(document.getElementById('tt-ge-limit').value, 10) || 0,
+    사이버강좌: document.getElementById('tt-cyber').checked,
+    동선최적화: document.getElementById('tt-move-opt').checked,
+    희망과목: ttWant, 이수과목: ttTaken,
+    // 희망과목에 지정한 교수·분반 (현재 태그에 있는 과목만 전송)
+    희망상세: Object.fromEntries(Object.entries(ttWantSpec).filter(([k]) => ttWant.includes(k))),
+    // pin: 고정한 과목·분반 (다시 생성/재계산 시 항상 포함)
+    고정과목: ttPinned.map(p => ({ 학수번호: p.학수번호, 분반: p.분반, 시간: p.시간 })),
+    // 성적표 업로드로 학점·성적을 아는 과목은 정확한 값, 수동 추가는 3학점 가정
+    이수상세: ttTaken.map(n => ttTakenDetail[n] || { 과목: n, 학점: 3, 성적: 'A0' }),
+    제외과목: ttAvoid,
+    공강요일: Array.from(document.querySelectorAll('#tt-offdays input:checked')).map(el => el.value),
+    차단시간: ttBlocksToStrings().concat(ttLunchBlock()),
+    공강처리: document.getElementById('tt-gap-style').value,
+    영어강의제외: document.getElementById('tt-no-eng').checked,
+    // 강의계획서 사이트 점검(~7/27) 임시 숨김: 팀플제외/PNP제외 전송 중단
+    우선순위: {
+      시간대: +document.getElementById('tt-rank-time').value,
+      공강: +document.getElementById('tt-rank-gap').value,
+      동선: +document.getElementById('tt-rank-walk').value,
+    },
+  };
+}
+
+async function ttGenerate() {
+  const body = ttCollectBody();
+
+  document.getElementById('tt-empty').style.display = 'none';
+  document.getElementById('tt-error').style.display = 'none';
+  document.getElementById('tt-results').style.display = 'none';
+  document.getElementById('tt-loading').style.display = '';
+
+  try {
+    const res = await fetch(API + '/api/timetable/recommend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`서버 오류 (${res.status})`);
+    const data = await res.json();
+    document.getElementById('tt-loading').style.display = 'none';
+    if (data.error) {
+      document.getElementById('tt-error').style.display = '';
+      document.getElementById('tt-error').textContent = data.error;
+      return;
+    }
+    ttRenderResults(data);
+  } catch (err) {
+    document.getElementById('tt-loading').style.display = 'none';
+    document.getElementById('tt-error').style.display = '';
+    document.getElementById('tt-error').textContent = '시간표를 생성하지 못했어요. (' + err.message + ')';
+    console.error(err);
+  }
+}
+
+const TT_PALETTE = [
+  '#A6192E', '#3F86C6', '#5DA391', '#EF9F27', '#8D6FC9',
+  '#D4708F', '#5BA6A0', '#C77B3D', '#6E8FBF', '#9A9E3F',
+  '#B5548A', '#4E9B6E', '#C6484D', '#7B6BA8', '#3F9165',
+];
+
+// 과목명 → 색을 영속적으로 기억한다. 과목을 추가/삭제해도 기존 과목 색이 바뀌지 않게.
+let ttColorMemo = {};
+let ttColorNext = 0;
+function ttBuildColorMap(courses) {
+  courses.forEach(c => {
+    if (!(c.교과목명 in ttColorMemo)) {
+      ttColorMemo[c.교과목명] = TT_PALETTE[ttColorNext % TT_PALETTE.length];
+      ttColorNext++;
+    }
+  });
+  return ttColorMemo;
+}
+
+function ttRenderGrid(courses) {
+  const timed = courses.filter(c => !c.사이버);
+  const cyber = courses.filter(c => c.사이버);
+  const colorMap = ttBuildColorMap(courses);
+  const dayOrder = ['월', '화', '수', '목', '금', '토', '일'];
+  const present = new Set();
+  timed.forEach(c => c.slots.forEach(s => present.add(s[0])));
+  const mainDays = ['월', '화', '수', '목', '금'];
+  mainDays.forEach(d => present.add(d));
+  const days = dayOrder.filter(d => present.has(d));
+
+  let minStart = Infinity, maxEnd = -Infinity;
+  timed.forEach(c => c.slots.forEach(([, s, e]) => { minStart = Math.min(minStart, s); maxEnd = Math.max(maxEnd, e); }));
+  if (!isFinite(minStart)) { minStart = 9 * 60; maxEnd = 18 * 60; }
+  // 기본을 넉넉히: 최소 9~18시는 항상 보이게(여백 그리드). 더 이르거나 늦은 수업이 있으면 그만큼 확장.
+  const startHour = Math.max(0, Math.min(9, Math.floor(minStart / 60)));
+  const endHour = Math.min(24, Math.max(18, Math.ceil(maxEnd / 60)));
+  const HOUR_PX = 52;
+  const totalHeight = (endHour - startHour) * HOUR_PX;
+  ttGridGeom = { startHour, endHour, HOUR_PX };   // 검색 미리보기 위치·확장 계산용
+
+  const hoursHtml = Array.from({ length: endHour - startHour }, (_, i) => startHour + i)
+    .map(h => `<div class="tt-grid-hour" style="height:${HOUR_PX}px;">${h}:00</div>`).join('');
+
+  const daysHtml = days.map(d => {
+    let blocksHtml = '';
+    timed.forEach(c => {
+      c.slots.filter(s => s[0] === d).forEach(([, s, e]) => {
+        const top = (s - startHour * 60) / 60 * HOUR_PX;
+        const height = Math.max(30, (e - s) / 60 * HOUR_PX);
+        const color = colorMap[c.교과목명] || '#B4B2A9';
+        const sub = [c.강의실, c.교수].filter(Boolean).map(ttEsc).join(' · ');
+        const elearn = c.이러닝 ? `<span class="tt-block-elearn">💻 e-러닝</span>` : '';
+        // 편집 모드: 블록 우상단 ×로 삭제. 평소: 고정 과목이면 📌.
+        const corner = ttEditMode
+          ? `<span class="tt-block-del" onclick="ttBlockDel(event,'${ttEsc(c.학수번호)}','${ttEsc(c.분반)}')" title="이 과목 삭제">×</span>`
+          : (ttIsPinned(c.학수번호, c.분반) ? `<span class="tt-block-pin" title="고정된 과목">📌</span>` : '');
+        blocksHtml += `<div class="tt-course-block" style="top:${top}px;height:${height}px;background:${color};" title="${ttEsc(c.교과목명)} · ${ttEsc(c.교수)} · ${ttEsc(c.강의실)}">
+          ${corner}<b>${ttEsc(c.교과목명)}</b>
+          <span class="tt-block-sub">${sub}</span>
+          ${elearn}
+        </div>`;
+      });
+    });
+    return `<div class="tt-grid-day">
+      <div class="tt-grid-day-label">${d}</div>
+      <div class="tt-grid-body" data-day="${d}" style="height:${totalHeight}px;">${blocksHtml}</div>
+    </div>`;
+  }).join('');
+
+  let html = `<div class="tt-grid-wrap">
+    <div class="tt-grid-hours">${hoursHtml}</div>
+    <div class="tt-grid-days">${daysHtml}</div>
+  </div>`;
+
+  if (cyber.length > 0) {
+    html += `<div class="tt-section-title">사이버강좌 (시간 무관)</div><div class="tt-cyber-list">` +
+      cyber.map(c => `<div class="tt-cyber-row"><span>${ttEsc(c.교과목명)} (${c.학점}학점)</span>` +
+        (ttEditMode
+          ? `<button class="tt-block-del cyber" onclick="ttBlockDel(event,'${ttEsc(c.학수번호)}','${ttEsc(c.분반)}')" title="삭제">×</button>`
+          : `<span class="tt-hint">${ttEsc(c.이러닝 || '온라인')}</span>`) +
+        `</div>`).join('') +
+      `</div>`;
+  }
+  return html;
+}
+
+// 졸업진단의 미이수 과목을 '클릭하면 희망과목에 추가되는' 칩으로 렌더
+function ttMissChips(names) {
+  if (!names || !names.length) return '';
+  return '<div class="tt-miss-chips">' + names.map(n =>
+    `<button class="tt-miss-chip" data-name="${ttEsc(n)}" onclick="ttAddWantFrom(this)" title="클릭하면 희망과목에 추가돼요">${ttEsc(n)} ＋</button>`
+  ).join('') + '</div>';
+}
+
+function ttAddWantFrom(btn) {
+  const name = btn.dataset.name;
+  if (ttWant.includes(name)) { ttToast(`'${name}'은(는) 이미 희망과목에 있어요`); return; }
+  ttWant.push(name);
+  ttRenderTags('want');
+  ttToast(`'${name}' 희망과목에 추가됐습니다!`);
+}
+
+function ttRenderDiagnosis(d) {
+  if (!d || d.오류) return '';
+  const cf = d.공통필수, b = d.균형교양, a = d.학문기초, g = d.졸업학점, cert = d.졸업인증;
+  return `<div class="tt-diag-grid">
+    <div class="tt-diag-card">
+      <h4>공통필수</h4>
+      <p>이수 ${cf.이수.length}개 / 미이수 <span class="${cf.미이수.length ? 'no' : 'ok'}">${cf.미이수.length}개</span></p>
+      ${ttMissChips(cf.미이수)}
+    </div>
+    <div class="tt-diag-card">
+      <h4>균형교양필수</h4>
+      <p>${ttEsc(b.필요 || '')}</p>
+      <p>이수 ${b.이수학점}학점 · 남은 <span class="${b.완료 ? 'ok' : 'no'}">${b.남은학점}학점</span></p>
+      ${(b.남은학점 > 0 && b.후보 && b.후보.length)
+        ? `<p class="tt-hint">이 중에서 ${b.남은학점}학점 채우기</p>${ttMissChips(b.후보.slice(0, 10))}`
+        : ''}
+    </div>
+    <div class="tt-diag-card">
+      <h4>학문기초교양필수</h4>
+      <p>필요 ${a.필요학점}학점 · 미이수 <span class="${a.미이수.length ? 'no' : 'ok'}">${a.미이수.length}개</span></p>
+      ${ttMissChips(a.미이수)}
+    </div>
+    <div class="tt-diag-card">
+      <h4>졸업학점</h4>
+      <p>${g.이수} / ${g.필요}학점 · 남은 <span class="${g.남은 ? 'no' : 'ok'}">${g.남은}학점</span></p>
+    </div>
+    <div class="tt-diag-card">
+      <h4>졸업인증</h4>
+      <p>${ttEsc(cert.필요 || '')}</p>
+      <p>${ttEsc(cert.입력필요 || '')}</p>
+    </div>
+  </div>`;
+}
+
+// [휴면] 강의계획서 사이트 점검(~7/27) 임시 숨김. 사이트 복구 후 아래 두 함수와
+//        계획서 버튼/열/세부행·팀플·PNP·선수경고 UI를 되살린다.
+function ttSyllabusDetailHtml(s) {
+  // 강의계획서(Upstage Document Parse 추출)에서 뽑은 세부 정보를 카드로
+  const 평 = s.평가방법 || {};
+  const ratio = 평.비율 ? Object.entries(평.비율).map(([k, v]) => `${k} ${v}%`).join(' · ') : '';
+  const 과제수 = (String(s.과제물 || '').match(/과제\s*\d+/g) || []).length;
+  let chips = '';
+  if (평.유형) chips += `<span class="tt-detail-chip">${ttEsc(평.유형)}</span>`;
+  if (s.PNP) chips += `<span class="tt-detail-chip warn">P/NP 성적</span>`;
+  chips += s.팀플 ? `<span class="tt-detail-chip warn">👥 팀 프로젝트</span>`
+                 : `<span class="tt-detail-chip">팀플 없음</span>`;
+  if (과제수) chips += `<span class="tt-detail-chip">📝 과제 ${과제수}개</span>`;
+  let html = `<div class="tt-detail-chips">${chips}</div>`;
+  if (ratio) html += `<div class="tt-detail-line"><b>평가 비율</b> ${ttEsc(ratio)}</div>`;
+  if (s.과제물) html += `<div class="tt-detail-line"><b>과제물</b> ${ttEsc(String(s.과제물).slice(0, 160))}</div>`;
+  if (s.강의개선) html += `<div class="tt-detail-line"><b>강의 개선(CQI)</b> ${ttEsc(String(s.강의개선).slice(0, 120))}</div>`;
+  html += `<div class="tt-hint">※ 강의계획서 자동 추출 정보라 실제와 다를 수 있어요.</div>`;
+  return html;
+}
+
+function ttToggleDetail(idx, gid) {
+  const row = document.getElementById('tt-detail-' + idx);
+  if (!row) return;
+  const showing = row.style.display === 'none';
+  row.style.display = showing ? '' : 'none';
+  // 계획서 펼침/접힘에 맞춰 그 그룹 구분 셀의 rowspan을 늘였다 줄인다(구분 열이 함께 늘어남)
+  const gubun = document.getElementById('tt-gubun-' + gid);
+  if (gubun) gubun.rowSpan += showing ? 1 : -1;
+}
+
+// 구분 셀을 뺀 과목 데이터 셀들. 과목명을 클릭하면 학수번호가 복사된다(수강신청용).
+// ── pin(고정) ─────────────────────────────────────────────────
+// 과목표의 📌를 누르면 그 과목·분반을 고정 목록에 넣는다. '다시 생성'을 눌러도
+// 모든 추천안에 이 분반 그대로 포함된다(서버 solve에 seed로 전달).
+function ttIsPinned(code, sec) {
+  const key = (code || '') + '|' + (sec || '');
+  return ttPinned.some(p => (p.학수번호 || '') + '|' + (p.분반 || '') === key);
+}
+
+function ttTogglePin(btn) {
+  const d = btn.dataset;
+  const key = (d.code || '') + '|' + (d.sec || '');
+  const i = ttPinned.findIndex(p => (p.학수번호 || '') + '|' + (p.분반 || '') === key);
+  const on = i < 0;
+  if (on) ttPinned.push({ 학수번호: d.code, 분반: d.sec, 시간: d.time, 교과목명: d.name });
+  else ttPinned.splice(i, 1);
+  ttShowAlt(ttCurrentAlt);   // 표·그리드를 다시 그려 핀 표시(버튼·블록)를 즉시 갱신
+  ttToast(on ? `📌 '${d.name}' 고정 — 다시 생성해도 유지돼요` : `고정 해제: ${d.name}`);
+}
+
+function ttCourseCells(c, idx, gid) {
+  const elearn = c.이러닝 ? `<span class="tt-block-elearn tt-table-elearn">💻 e-러닝</span>` : '';
+  const time = c.사이버 ? '사이버(시간 지정 없음)' : c.slots.map(([d, s, e]) =>
+    `${d} ${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}~${String(Math.floor(e/60)).padStart(2,'0')}:${String(e%60).padStart(2,'0')}`
+  ).join(', ');
+  const pinned = ttIsPinned(c.학수번호, c.분반);
+  // 강의계획서 사이트 점검(~7/27) 임시 숨김: 계획서 세부 버튼 셀 제거
+  return `<td><span class="tt-copy-name" data-copy="${ttEsc(c.학수번호 || c.교과목명)}" data-label="${ttEsc(c.교과목명)}"
+             onclick="ttCopyFromBtn(this)" title="클릭하면 학수번호 복사(수강신청용)">${ttEsc(c.교과목명)}</span> ${elearn}</td>
+    <td>${c.학점}</td>
+    <td>${ttEsc(c.학년)}</td>
+    <td>${ttEsc(time)}</td>
+    <td>${ttEsc(c.강의실)}</td>
+    <td>${ttEsc(c.교수)}</td>
+    <td>${ttEsc(c.분반)}</td>
+    <td><button class="tt-pin-btn ${pinned ? 'on' : ''}" data-code="${ttEsc(c.학수번호 || '')}"
+        data-sec="${ttEsc(c.분반 || '')}" data-time="${ttEsc(c.시간 || '')}" data-name="${ttEsc(c.교과목명 || '')}"
+        onclick="ttTogglePin(this)" title="${pinned ? '고정 해제' : '이 분반으로 고정 — 다시 생성해도 유지돼요'}">📌</button></td>`;
+}
+
+// 신청 과목 목록 — 이수구분(전공필수/기초/선택·교양…)별로 묶어서 표시.
+// 구분 셀은 rowspan으로 그룹을 세로 병합. 강의계획서를 펼치면 그 그룹 구분 셀 rowspan을
+// +1 해서 구분 열이 함께 늘어난다(ttToggleDetail).
+function ttRenderCourseTable(courses) {
+  if (!courses || !courses.length) return '';
+  const order = ['전공필수', '전공기초', '전공선택'];
+  const groups = {};
+  courses.forEach((c, idx) => {
+    const g = c.이수구분 || '기타';
+    (groups[g] = groups[g] || []).push({ c, idx });
+  });
+  const keys = Object.keys(groups).sort((a, b) => {
+    const ia = order.indexOf(a), ib = order.indexOf(b);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
+  });
+  let rows = '', gid = 0;
+  keys.forEach(g => {
+    const items = groups[g];
+    const cr = items.reduce((s, x) => s + (+x.c.학점 || 0), 0);
+    const myGid = gid++;
+    items.forEach(({ c, idx }, gi) => {
+      const gubun = gi === 0
+        ? `<td class="tt-gubun-cell" id="tt-gubun-${myGid}" rowspan="${items.length}">${ttEsc(g)}<span class="tt-gubun-sum">${items.length}과목·${cr}학점</span></td>`
+        : '';   // 나머지 과목 행은 위 구분 셀의 rowspan에 덮인다
+      rows += `<tr class="${gi === 0 ? 'tt-grp-start' : ''}">${gubun}${ttCourseCells(c, idx, myGid)}</tr>`;
+      // 강의계획서 사이트 점검(~7/27) 임시 숨김: 계획서 세부 접이식 행 제거
+    });
+  });
+  return `<div class="tt-table-wrap"><table class="tt-course-table">
+    <thead><tr>
+      <th>구분</th><th>과목명</th><th>학점</th><th>학년</th><th>시간</th><th>강의실</th><th>교수</th><th>분반</th><th>고정</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+// 건물 이동 동선 — 요일별로 묶어 표로. 요일은 그룹 첫 줄에만 표시(신청 과목 목록과 동일 형식).
+function ttRenderMoveTable(list) {
+  if (!list || !list.length) return '';
+  const dayOrder = ['월', '화', '수', '목', '금', '토', '일'];
+  const byDay = {};
+  list.forEach(r => { (byDay[r.요일] = byDay[r.요일] || []).push(r); });
+  const days = Object.keys(byDay).sort((a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b));
+  let rows = '';
+  days.forEach(day => {
+    const items = byDay[day];
+    items.forEach((r, gi) => {
+      const dcell = gi === 0
+        ? `<td class="tt-gubun-cell" rowspan="${items.length}">${ttEsc(day)}<span class="tt-gubun-sum">${items.length}회 이동</span></td>`
+        : '';   // 나머지 행은 위 요일 셀의 rowspan에 덮인다
+      rows += `<tr class="${gi === 0 ? 'tt-grp-start' : ''}">${dcell}
+        <td>${ttEsc(r.이전)} → ${ttEsc(r.다음)}</td>
+        <td>${ttEsc(r.이전강의실)} → ${ttEsc(r.다음강의실)}</td>
+        <td>도보 ${r.이동분}분</td>
+        <td><span class="tt-move-tag ${r.ok ? '' : 'bad'}">${r.ok ? '여유' : '촉박'}</span></td>
+      </tr>`;
+    });
+  });
+  return `<div class="tt-table-wrap"><table class="tt-course-table">
+    <thead><tr><th>요일</th><th>이동</th><th>강의실</th><th>도보</th><th>여유</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+let ttShared = null;   // 마지막 응답(공유 필드: 진단·조건제외 등)
+let ttAlts = [];       // 추천안 목록 (탭 전환용)
+let ttCurrentAlt = 0;  // 지금 보고 있는 추천안 — 자연어 직접편집의 기준
+
+function ttRenderResults(data) {
+  ttShared = data;
+  ttAlts = data.alts || [];
+  ttShowAlt(0);
+}
+
+function ttShowAlt(idx) {
+  ttCurrentAlt = idx;
+  const alt = ttAlts[idx] || {};
+  const view = { ...ttShared, ...alt };   // 추천안별 metrics·timetable이 공유 필드를 덮어씀
+  const tabs = ttAlts.length > 1
+    ? `<div class="tt-alt-tabs">` + ttAlts.map((a, i) =>
+        `<button class="tt-alt-tab ${i === idx ? 'on' : ''}" onclick="ttShowAlt(${i})">${ttEsc(a.label)}</button>`
+      ).join('') + `</div>`
+    : '';
+  // 헤더: 제목(위) → 추천안 탭(왼쪽) + 직접 편집(오른쪽, 같은 줄)
+  let html = `<div class="tt-result-head">
+      <div class="tt-result-title">추천 시간표</div>
+      <div class="tt-result-row">
+        ${tabs}
+        <button class="tt-edit-btn" onclick="ttEnterEditMode()">✏️ 직접 편집</button>
+      </div>
+    </div>`;
+  if (ttAlts.length > 1 && alt.다른점 && alt.다른점.length) {
+    html += `<div class="tt-hint tt-alt-hint">↺ ${ttEsc(alt.다른점.join(', '))} 없이 구성한 대안이에요.</div>`;
+  }
+  html += ttResultHtml(view);
+  document.getElementById('tt-results').innerHTML = html;
+  document.getElementById('tt-results').style.display = '';
+  document.getElementById('tt-nl-box').style.display = '';
+}
+
+// ── 직접 편집(독립 모드) ─────────────────────────────────────────
+// 지금 보고 있는 시간표를 그대로 손으로 고친다(재계산 없음). 검색해서 추가(충돌 차단),
+// ×로 삭제, 되돌리기·초기화. '편집 끝내기'를 누르면 편집본이 현재 추천안으로 확정된다.
+function ttEnterEditMode() {
+  const cur = (ttAlts[ttCurrentAlt] && ttAlts[ttCurrentAlt].timetable)
+              || (ttShared && ttShared.timetable) || [];
+  ttEditTable = JSON.parse(JSON.stringify(cur));
+  ttEditOrig = JSON.parse(JSON.stringify(cur));
+  ttEditUndo = [];
+  ttSearchResults = [];
+  ttEditMode = true;
+  const formCol = document.querySelector('.tt-form-col');
+  if (formCol) formCol.style.display = 'none';   // 편집 중엔 왼쪽 입력 사이드바 숨김(검색란이 그 자리)
+  ttRenderEditView();
+}
+
+function ttEditSnapshot() {
+  ttEditUndo.push(JSON.parse(JSON.stringify(ttEditTable)));
+  if (ttEditUndo.length > 50) ttEditUndo.shift();
+}
+
+// 새 분반의 slots가 편집 중인 시간표와 겹치면 그 과목명을 반환(없으면 null)
+function ttEditConflict(slots) {
+  for (const c of ttEditTable) {
+    for (const [d, s, e] of (c.slots || [])) {
+      for (const [d2, s2, e2] of (slots || [])) {
+        if (d === d2 && s < e2 && s2 < e) return c.교과목명;
+      }
+    }
+  }
+  return null;
+}
+
+function ttEditMetrics() {
+  const base = (ttAlts[ttCurrentAlt] && ttAlts[ttCurrentAlt].metrics) || {};
+  const 총학점 = ttEditTable.reduce((s, c) => s + (+c.학점 || 0), 0);
+  let 충돌 = 0;
+  for (let i = 0; i < ttEditTable.length; i++)
+    for (let j = i + 1; j < ttEditTable.length; j++)
+      if (ttEditConflictPair(ttEditTable[i], ttEditTable[j])) 충돌++;
+  return { ...base, 총학점, 과목수: ttEditTable.length, 충돌 };
+}
+function ttEditConflictPair(a, b) {
+  for (const [d, s, e] of (a.slots || []))
+    for (const [d2, s2, e2] of (b.slots || []))
+      if (d === d2 && s < e2 && s2 < e) return true;
+  return false;
+}
+
+function ttEditAdd(idx) {
+  const x = ttSearchResults[idx];
+  if (!x) return;
+  if (ttEditTable.some(c => c.학수번호 === x.학수번호 && String(c.분반) === String(x.분반))) {
+    ttToast('이미 시간표에 있는 분반이에요'); return;
+  }
+  if (!x.사이버) {
+    const conf = ttEditConflict(x.slots);
+    if (conf) { ttToast(`⛔ '${x.교과목명}'은(는) '${conf}'과(와) 시간이 겹쳐 넣지 못했어요`); return; }
+  }
+  ttEditSnapshot();
+  ttEditTable.push({ ...x, 트랙: '직접추가' });
+  ttToast(`➕ '${x.교과목명}' ${x.분반}분반 추가됨`);
+  ttRefreshEditGrid();
+}
+
+function ttEditRemove(code, sec) {
+  ttEditSnapshot();
+  ttEditTable = ttEditTable.filter(c => !(c.학수번호 === code && String(c.분반) === String(sec)));
+  ttRefreshEditGrid();
+}
+
+function ttEditUndoAction() {
+  if (!ttEditUndo.length) { ttToast('되돌릴 게 없어요'); return; }
+  ttEditTable = ttEditUndo.pop();
+  ttRefreshEditGrid();
+}
+
+function ttEditReset() {
+  ttEditSnapshot();
+  ttEditTable = JSON.parse(JSON.stringify(ttEditOrig));
+  ttRefreshEditGrid();
+  ttToast('처음 생성된 시간표로 되돌렸어요');
+}
+
+function ttExitEdit() {
+  ttEditMode = false;
+  const formCol = document.querySelector('.tt-form-col');
+  if (formCol) formCol.style.display = '';         // 왼쪽 입력 사이드바 복원
+  if (ttAlts[ttCurrentAlt]) {                       // 편집본을 현재 추천안으로 확정(재계산 없음)
+    ttAlts[ttCurrentAlt].timetable = ttEditTable;
+    ttAlts[ttCurrentAlt].metrics = ttEditMetrics();
+  } else if (ttShared) {
+    ttShared.timetable = ttEditTable;
+  }
+  ttShowAlt(ttCurrentAlt);
+}
+
+async function ttSearch() {
+  const g = id => (document.getElementById(id).value || '').trim();
+  const map = { 과목명: 'es-name', 교수: 'es-prof', 학과: 'es-dept', 학년: 'es-grade',
+                요일: 'es-day', 시작: 'es-from', 종료: 'es-to' };
+  const q = new URLSearchParams();
+  for (const [k, id] of Object.entries(map)) { const v = g(id); if (v) q.set(k, v); }
+  if (![...q.keys()].length) { ttToast('검색 조건을 하나 이상 입력하세요'); return; }
+  const status = document.getElementById('es-status');
+  status.textContent = '검색 중...';
+  try {
+    const r = await fetch(API + '/api/timetable/search?' + q.toString());
+    const d = await r.json();
+    ttSearchResults = d.결과 || [];
+    ttRenderSearchResults(d.잘림);
+    status.textContent = `${ttSearchResults.length}건`;
+  } catch (e) { status.textContent = '검색 실패'; }
+}
+
+function ttRenderSearchResults(truncated) {
+  const box = document.getElementById('es-results');
+  if (!box) return;
+  if (!ttSearchResults.length) { box.innerHTML = '<div class="tt-hint">검색 결과가 없어요.</div>'; return; }
+  // 마우스를 올리면 그리드에 반투명 미리보기(겹치면 빨강+경고). 클릭 추가는 겹치면 차단.
+  box.innerHTML = ttSearchResults.map((x, i) => {
+    const dup = ttEditTable.some(c => c.학수번호 === x.학수번호 && String(c.분반) === String(x.분반));
+    const conf = (!x.사이버 && !dup) ? ttEditConflict(x.slots) : null;
+    const btn = dup ? `<span class="es-added">추가됨</span>`
+      : conf ? `<button class="es-add conf" onclick="ttEditAdd(${i})" title="'${ttEsc(conf)}'과(와) 겹쳐요 — 넣을 수 없어요">⚠ 겹침</button>`
+      : `<button class="es-add" onclick="ttEditAdd(${i})">＋ 추가</button>`;
+    return `<div class="es-row${conf ? ' conf' : ''}" onmouseenter="ttPreviewSearch(${i})" onmouseleave="ttPreviewClear()">
+      <div class="es-row-main"><b>${ttEsc(x.교과목명)}</b>
+        <span class="es-row-sub">${ttEsc(x.분반)}분반 · ${ttEsc(x.교수)} · ${ttEsc(x.시간)} · ${x.학점}학점 · ${ttEsc(x.개설학과)}</span></div>
+      ${btn}</div>`;
+  }).join('') + (truncated ? '<div class="tt-hint">결과가 많아요 — 조건을 좁혀보세요.</div>' : '');
+}
+
+// 그리드 블록 우상단 × — 클릭 시 그 과목 삭제(블록 클릭과 분리)
+function ttBlockDel(e, code, sec) {
+  e.stopPropagation();
+  ttEditRemove(code, sec);
+}
+
+// 검색 결과에 마우스 올림 → 그 분반을 그리드에 반투명으로 미리 보여준다(겹치면 빨강+경고)
+// 미리보기가 현재 그리드 끝(endHour)을 넘으면 그리드를 그만큼 아래로 늘린다.
+function ttGridExtend(endNeeded) {
+  const g = ttGridGeom;
+  if (!g || endNeeded <= g.endHour) return;
+  const h = (endNeeded - g.startHour) * g.HOUR_PX;
+  document.querySelectorAll('#es-grid .tt-grid-body').forEach(b => b.style.height = h + 'px');
+  const hours = document.querySelector('#es-grid .tt-grid-hours');
+  if (hours) {
+    let cur = g.startHour + hours.querySelectorAll('.tt-grid-hour').length;
+    while (cur < endNeeded) {
+      const d = document.createElement('div');
+      d.className = 'tt-grid-hour tt-grid-hour-ext';
+      d.style.height = g.HOUR_PX + 'px';
+      d.textContent = cur + ':00';
+      hours.appendChild(d);
+      cur++;
+    }
+  }
+}
+function ttGridExtendReset() {
+  const g = ttGridGeom;
+  if (!g) return;
+  const h = (g.endHour - g.startHour) * g.HOUR_PX;
+  document.querySelectorAll('#es-grid .tt-grid-body').forEach(b => b.style.height = h + 'px');
+  document.querySelectorAll('#es-grid .tt-grid-hour-ext').forEach(el => el.remove());
+}
+
+function ttPreviewSearch(idx) {
+  ttPreviewClear();
+  const x = ttSearchResults[idx];
+  if (!x || !ttEditMode || x.사이버 || !ttGridGeom) return;
+  if (ttEditTable.some(c => c.학수번호 === x.학수번호 && String(c.분반) === String(x.분반))) return;
+  const conf = ttEditConflict(x.slots);
+  const { startHour, HOUR_PX } = ttGridGeom;
+  const endNeeded = Math.ceil(Math.max(...x.slots.map(([, , e]) => e)) / 60);
+  ttGridExtend(endNeeded);              // 넘어가면 그리드 확장 후 미리보기 배치
+  (x.slots || []).forEach(([d, s, e]) => {
+    const body = document.querySelector(`#es-grid .tt-grid-body[data-day="${d}"]`);
+    if (!body) return;
+    const div = document.createElement('div');
+    div.className = 'tt-preview-block' + (conf ? ' conf' : '');
+    div.style.top = ((s - startHour * 60) / 60 * HOUR_PX) + 'px';
+    div.style.height = Math.max(24, (e - s) / 60 * HOUR_PX) + 'px';
+    div.innerHTML = `<b>${ttEsc(x.교과목명)}</b>`;
+    body.appendChild(div);
+  });
+  if (conf) ttEditWarn(`⛔ '${x.교과목명}'은(는) '${conf}'과(와) 시간이 겹쳐 넣을 수 없어요`);
+}
+
+function ttPreviewClear() {
+  document.querySelectorAll('.tt-preview-block').forEach(el => el.remove());
+  ttGridExtendReset();
+  ttEditWarnClear();
+}
+
+function ttEditWarn(msg) {
+  let el = document.getElementById('tt-editwarn');
+  if (!el) { el = document.createElement('div'); el.id = 'tt-editwarn'; el.className = 'tt-editwarn'; document.body.appendChild(el); }
+  el.textContent = msg;
+  el.classList.add('show');
+}
+function ttEditWarnClear() {
+  const el = document.getElementById('tt-editwarn');
+  if (el) el.classList.remove('show');
+}
+
+function ttRenderEditView() {
+  const days = ['월', '화', '수', '목', '금'];
+  const html = `
+    <div class="es-toolbar">
+      <button class="es-exit" onclick="ttExitEdit()">← 편집 끝내기</button>
+      <div class="es-tools">
+        <span id="es-metrics" class="es-metrics"></span>
+        <button onclick="ttEditUndoAction()">↩ 되돌리기</button>
+        <button onclick="ttEditReset()">초기화</button>
+      </div>
+    </div>
+    <div class="es-body">
+      <div class="es-search">
+        <div class="es-search-title">🔍 과목 검색해서 추가</div>
+        <div class="es-filters">
+          <input id="es-name" placeholder="과목명">
+          <input id="es-prof" placeholder="교수">
+          <input id="es-dept" placeholder="학과">
+          <input id="es-grade" placeholder="학년" class="es-sm">
+          <select id="es-day"><option value="">요일</option>${days.map(d => `<option>${d}</option>`).join('')}</select>
+          <div class="es-time-row">
+            <span class="es-time-label">시간</span>
+            <input id="es-from" placeholder="09:00" class="es-md">
+            <span class="es-tilde">~</span>
+            <input id="es-to" placeholder="18:00" class="es-md">
+          </div>
+          <button class="es-search-btn" onclick="ttSearch()">검색</button>
+          <span id="es-status" class="tt-hint"></span>
+        </div>
+        <div id="es-results" class="es-results"></div>
+      </div>
+      <div class="es-gridcol">
+        <div class="es-hint-row">검색 결과에 마우스를 올리면 미리보기가 떠요. 각 과목 <b>우측 상단 ×</b>로 삭제돼요.</div>
+        <div id="es-grid"></div>
+      </div>
+    </div>`;
+  document.getElementById('tt-results').innerHTML = html;
+  document.getElementById('tt-nl-box').style.display = 'none';   // 편집 중엔 말로 조정 숨김
+  ['es-name', 'es-prof', 'es-dept'].forEach(id =>
+    document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') ttSearch(); }));
+  ttRefreshEditGrid();
+}
+
+// 편집 중 그리드·지표만 갱신(검색 패널은 그대로 둠 → 검색 상태 유지)
+function ttRefreshEditGrid() {
+  document.getElementById('es-grid').innerHTML = ttRenderGrid(ttEditTable);
+  const m = ttEditMetrics();
+  document.getElementById('es-metrics').innerHTML =
+    `${(+m.총학점).toFixed(0)}학점 · ${m.과목수}과목` +
+    (m.충돌 ? ` · <span class="es-conflict">시간충돌 ${m.충돌}</span>` : '');
+  if (ttSearchResults.length) ttRenderSearchResults();
+}
+
+// 추천 칩 클릭 → 프롬프트 자동 입력 후 바로 적용
+function ttChip(text) {
+  document.getElementById('tt-nl-input').value = text;
+  ttNlAdjust();
+}
+
+async function ttNlAdjust() {
+  const input = document.getElementById('tt-nl-input');
+  const status = document.getElementById('tt-nl-status');
+  const text = input.value.trim();
+  if (!text) return;
+  status.textContent = '⏳ 요청을 해석하고 다시 계산하는 중...';
+  try {
+    // 지금 화면에 보이는 추천안 기준으로 편집 (탭 전환 상태 반영)
+    const cur = ((ttAlts[ttCurrentAlt] && ttAlts[ttCurrentAlt].timetable)
+                 || (ttShared && ttShared.timetable)) || [];
+    const res = await fetch(API + '/api/timetable/nl_adjust', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text, profile: ttCollectBody(),
+        현재과목: cur.map(c => c.교과목명),
+        // 직접편집 모드용 — 교차개설(같은 학수번호·분반이 여러 행) 오복원 방지를 위해 시간까지 전달
+        현재시간표: cur.map(c => ({ 학수번호: c.학수번호, 분반: c.분반, 시간: c.시간 })),
+      }),
+    });
+    if (!res.ok) throw new Error(`서버 오류 (${res.status})`);
+    const data = await res.json();
+    if (data.error) { status.textContent = '⚠️ ' + data.error; return; }
+    ttApplyDelta(data.적용 || {});     // 폼 상태도 동기화 — 다음 생성과 조건 일치
+    ttRenderResults(data);
+    status.textContent = '✅ ' + ((data.적용 && data.적용.요약) || '조건을 반영해 다시 생성했어요.');
+    input.value = '';
+  } catch (err) {
+    console.error(err);
+    status.textContent = '⚠️ 조정에 실패했어요. (' + err.message + ')';
+  }
+}
+
+function ttApplyDelta(a) {
+  // 서버가 이해·병합한 조건을 왼쪽 폼에도 반영해서 상태를 일치시킨다
+  if (a.공강요일) document.querySelectorAll('#tt-offdays input').forEach(el => { el.checked = a.공강요일.includes(el.value); });
+  (a.차단시간추가 || []).forEach(s => {
+    const m = s.match(/^([월화수목금토일\s]+?)\s+(\d{1,2}:\d{2})~(\d{1,2}:\d{2})$/);
+    if (m) ttBlocks.push({ days: m[1].trim().split(/\s+/), start: m[2], end: m[3] });
+  });
+  if (a.차단시간추가) ttRenderBlocks();
+  (a.제외과목추가 || []).concat(a.대체과목 || []).forEach(n => { if (!ttAvoid.includes(n)) ttAvoid.push(n); });
+  if (a.제외과목추가 || a.대체과목) ttRenderTags('avoid');
+  (a.희망과목추가 || []).forEach(n => { if (!ttWant.includes(n)) ttWant.push(n); });
+  if (a.희망과목추가) ttRenderTags('want');
+  // 말로 고정/해제 — 서버가 pin으로 반영했으니 폼의 pin 목록(ttPinned)도 맞춘다
+  (a.고정과목추가 || []).forEach(n => {
+    const cur = (((ttAlts[ttCurrentAlt] || ttShared || {}).timetable) || []).find(c => c.교과목명 === n);
+    if (cur && !ttIsPinned(cur.학수번호, cur.분반)) {
+      ttPinned.push({ 학수번호: cur.학수번호, 분반: cur.분반, 시간: cur.시간, 교과목명: cur.교과목명 });
+    }
+  });
+  if (a.고정과목해제) ttPinned = ttPinned.filter(p => !a.고정과목해제.includes(p.교과목명));
+  // 말로 분반·교수 지정 — 희망과목 태그의 지정(⚙) 정보와 동기화
+  (a.분반지정 || []).forEach(s => {
+    if (!s.과목) return;
+    const spec = ttWantSpec[s.과목] || {};
+    if (s.분반) spec.분반 = s.분반;
+    if (s.교수) spec.교수 = s.교수;
+    ttWantSpec[s.과목] = spec;
+    if (!ttWant.includes(s.과목)) ttWant.push(s.과목);
+  });
+  if (a.분반지정) ttRenderTags('want');
+  if (a.선호) document.getElementById('tt-prefer').value = a.선호;
+  if (a.목표학점) document.getElementById('tt-credits').value = a.목표학점;
+  if (a.공강처리 !== undefined && a.공강처리 !== null) document.getElementById('tt-gap-style').value = a.공강처리;
+  // 강의계획서 사이트 점검(~7/27) 임시 숨김: 팀플제외/PNP제외 제외
+  const boolMap = { 영어강의제외: 'tt-no-eng', 사이버강좌: 'tt-cyber', 동선최적화: 'tt-move-opt' };
+  for (const [k, id] of Object.entries(boolMap)) {
+    if (typeof a[k] === 'boolean') document.getElementById(id).checked = a[k];
+  }
+}
+
+function ttResultHtml(data) {
+  const m = data.metrics;
+  let html = `<div class="tt-metrics">
+    <div class="tt-metric"><div class="num">${m.총학점.toFixed(1)} / ${m.목표}</div><div class="label">총 학점 / 목표</div></div>
+    <div class="tt-metric"><div class="num">${m.과목수}</div><div class="label">과목 수</div></div>
+    <div class="tt-metric ${m.충돌 ? 'bad' : ''}"><div class="num">${m.충돌}</div><div class="label">시간 충돌</div></div>
+    <div class="tt-metric ${m.남은필수 ? 'bad' : ''}"><div class="num">${m.남은필수}</div><div class="label">아직 안 들은 전공필수/기초</div></div>
+  </div>`;
+
+  if (data.경고 && data.경고.length) {
+    html += `<div class="tt-section-title">⚠️ 확인해 주세요</div>`;
+    html += data.경고.map(w => `<div class="tt-warn-row">⚠️ <span>${ttEsc(w)}</span></div>`).join('');
+  }
+
+  html += ttRenderGrid(data.timetable);
+  // 이미 이수한 과목이 시간표에 들어있으면(재수강 아닌 실수 가능) 작게 경고 — 동일과목(옛 이름) 포함
+  const takenSet = new Set((ttShared && ttShared.이수확장) || ttTaken);
+  const retake = [...new Set((data.timetable || []).filter(c => takenSet.has(c.교과목명)).map(c => c.교과목명))];
+  if (retake.length) {
+    html += `<div class="tt-retake-warn">⚠️ 이미 이수한 과목이 시간표에 있어요 — <b>${retake.map(ttEsc).join(', ')}</b>. 재수강이 아니라면 빼는 게 좋아요.</div>`;
+  }
+  html += `<div class="tt-section-title">신청 과목 목록</div>`;
+  html += ttRenderCourseTable(data.timetable);
+
+  // 강의계획서 사이트 점검(~7/27) 임시 숨김: 선수과목 경고 (선수과목 데이터 없음)
+
+  if (data.이동동선 && data.이동동선.length) {
+    html += `<div class="tt-section-title">건물 이동 동선</div>`;
+    html += ttRenderMoveTable(data.이동동선);
+  }
+
+  html += `<div class="tt-section-title">졸업요건 진단</div>`;
+  html += ttRenderDiagnosis(data.진단);
+
+  if (data.이수제외text || (data.조건제외 && data.조건제외.length)) {
+    html += `<div class="tt-section-title">참고 사항</div>`;
+    if (data.이수제외text) {
+      html += `<div class="tt-note-box">📋 이수로 인식해 시간표에서 제외한 과목<br>${ttEsc(data.이수제외text)}</div>`;
+    }
+    if (data.조건제외 && data.조건제외.length) {
+      html += `<div class="tt-note-box">⚠️ 입력한 조건(공강요일·차단시간·교수·언어) 때문에 후보에서 빠진 과목<br>` +
+        data.조건제외.map(c => `· ${ttEsc(c.교과목명)} (${ttEsc(c.사유)})`).join('<br>') + `</div>`;
+    }
+  }
+
+  return html;
+}
+</script>
+
+</body>
+</html>
