@@ -61,8 +61,27 @@ def load_api_key(path=SECRETS_FILE):
     )
 
 
-UPSTAGE_API_KEY = load_api_key()
+def load_api_key(path=SECRETS_FILE):
+    # 1순위: Render 환경변수
+    env_key = os.getenv("UPSTAGE_API_KEY")
+    if env_key:
+        return env_key
 
+    # 2순위: 로컬 secrets.json
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            secrets = json.load(f)
+
+        for key_name in ("UPSTAGE_API_KEY", "upstage_api_key", "api_key"):
+            if key_name in secrets and secrets[key_name]:
+                return secrets[key_name]
+
+    raise RuntimeError(
+        "UPSTAGE_API_KEY가 없습니다. "
+        "환경변수 또는 secrets.json을 설정하세요."
+    )
+
+UPSTAGE_API_KEY = load_api_key()
 
 # ────────────────────────────────────────────────────────────────
 # 1단계: 임베딩
