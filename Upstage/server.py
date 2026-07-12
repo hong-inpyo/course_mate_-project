@@ -18,7 +18,14 @@ from pydantic import BaseModel
 
 _ROOT = os.path.dirname(os.path.abspath(__file__))   # 프로젝트 루트 (이 파일 위치)
 
-from chatbot.pipeline import search, generate_answer
+from chatbot.pipeline import (
+    search,
+    generate_answer,
+    build_vector_db,
+    DB_DIR,
+    COLLECTION_NAME,
+)
+import chromadb
 from features.roadmap_logic import (
     load_and_clean, scan_available_excels, EXCEL_DIR,
     CATEGORY_INFO, CATEGORY_ORDER, semester_sort_key,
@@ -26,7 +33,19 @@ from features.roadmap_logic import (
 
 app = FastAPI(title="세종대 수강편람 챗봇 API")
 
+# -------------------------------------------------
+# ChromaDB 컬렉션이 없으면 서버 시작 시 자동 생성
+# -------------------------------------------------
+client = chromadb.PersistentClient(path=DB_DIR)
 
+try:
+    client.get_collection(COLLECTION_NAME)
+    print("✅ ChromaDB collection already exists.")
+except Exception:
+    print("⚠️ ChromaDB collection not found. Building...")
+    build_vector_db()
+    print("✅ ChromaDB build complete.")
+    
 # ────────────────────────────────────────────────────────────────
 # 챗봇 API
 # ────────────────────────────────────────────────────────────────

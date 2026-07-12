@@ -154,10 +154,19 @@ def build_vector_db(chunks_path=CHUNKS_FILE, batch_size=20):
 
 def search(question, top_k=20):
     client = chromadb.PersistentClient(path=DB_DIR)
-    collection = client.get_collection(COLLECTION_NAME)
+
+    try:
+        collection = client.get_collection(COLLECTION_NAME)
+    except Exception:
+        print("Collection이 없어서 새로 생성합니다.")
+        build_vector_db()
+        collection = client.get_collection(COLLECTION_NAME)
 
     query_vector = embed_query(question)
-    results = collection.query(query_embeddings=[query_vector], n_results=top_k)
+    results = collection.query(
+        query_embeddings=[query_vector],
+        n_results=top_k
+    )
 
     hits = []
     for doc, meta, dist, cid in zip(
@@ -172,8 +181,8 @@ def search(question, top_k=20):
             "text": doc,
             "distance": dist,
         })
-    return hits
 
+    return hits
 
 # ────────────────────────────────────────────────────────────────
 # 4단계: 답변 생성 (Chat API)
