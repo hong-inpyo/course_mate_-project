@@ -15,7 +15,9 @@ import os
 from openai import OpenAI
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # 프로젝트 루트
-UPSTAGE_API_KEY = json.load(open(os.path.join(_ROOT, "secrets.json")))["UPSTAGE_API_KEY"]
+import os
+
+UPSTAGE_API_KEY = os.getenv("UPSTAGE_API_KEY")
 CHAT_BASE_URL = "https://api.upstage.ai/v1"
 
 SYSTEM_PROMPT = (
