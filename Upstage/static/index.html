@@ -1064,17 +1064,30 @@
     cursor: pointer; font-size: 18px; color: var(--muted);
   }
 
-  /* ── 챗봇 탭 (독립 뷰) ── */
-  #view-chat .view-chat-inner {
-    max-width: 760px; margin: 0 auto;
+  /* ── 우측 사이드 채팅 패널 ── */
+  #chat-toggle {
+    position: fixed; top: 50%; right: 0; transform: translateY(-50%);
+    background: var(--crimson); color: #fff; border: none;
+    border-radius: 14px 0 0 14px; padding: 16px 10px;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    cursor: pointer; box-shadow: -4px 4px 20px rgba(0,0,0,0.16);
+    z-index: 1000; transition: transform 0.25s ease, opacity 0.2s ease;
+  }
+  #chat-toggle img { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; display: block; }
+  #chat-toggle span {
+    writing-mode: vertical-rl; font-size: 12.5px; font-weight: 700; letter-spacing: 0.04em;
+  }
+  #chat-toggle.hidden {
+    transform: translateY(-50%) translateX(100%); opacity: 0; pointer-events: none;
   }
 
   #chat-panel {
-    background: #fff; border: 1px solid var(--line); border-radius: 16px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.05);
-    display: flex; flex-direction: column; overflow: hidden;
-    height: calc(100vh - 260px); min-height: 460px;
+    position: fixed; top: 0; right: 0; height: 100vh; width: 400px; max-width: 92vw;
+    background: #fff; box-shadow: -10px 0 36px rgba(0,0,0,0.14);
+    display: flex; flex-direction: column; overflow: hidden; z-index: 999;
+    transform: translateX(100%); transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
   }
+  #chat-panel.open { transform: translateX(0); }
 
   #chat-header {
     background: var(--crimson); color: #fff; padding: 18px 20px;
@@ -1143,7 +1156,7 @@
   }
 
   @media (max-width: 480px) {
-    #chat-panel { height: calc(100vh - 200px); min-height: 380px; }
+    #chat-panel { width: 100vw; max-width: 100vw; }
   }
 </style>
 </head>
@@ -1155,7 +1168,6 @@
     CourseMate
   </div>
   <nav id="nav">
-    <button data-view="chat">챗봇</button>
     <button data-view="calendar">학사일정</button>
     <button data-view="manual">수강편람</button>
     <button data-view="roadmap">교과과정</button>
@@ -1506,11 +1518,11 @@
               <div class="tt-row">
                 <div class="tt-field tt-field-sm">
                   <label>전공 개수 상한</label>
-                  <input type="number" id="tt-major-limit" placeholder="제한없음">
+                  <input type="number" id="tt-major-limit" min="0" max="7" placeholder="제한없음(최대 7)">
                 </div>
                 <div class="tt-field tt-field-sm">
                   <label>교양 개수 상한</label>
-                  <input type="number" id="tt-ge-limit" placeholder="제한없음">
+                  <input type="number" id="tt-ge-limit" min="0" max="7" placeholder="제한없음(최대 7)">
                 </div>
               </div>
               <div class="tt-row">
@@ -1522,7 +1534,8 @@
                     <option value="큰공강">3시간 이상 공강 방지</option>
                   </select>
                 </div>
-                <div class="tt-field">
+                <!-- [팀 피드백 숨김] 점심시간 비우기 — 요소 유지(값 ""=미사용), UI만 숨김 -->
+                <div class="tt-field" style="display:none;">
                   <label>점심시간 비우기</label>
                   <select id="tt-lunch">
                     <option value="">안 함</option>
@@ -1545,7 +1558,8 @@
               </div>
             </div>
 
-            <div class="tt-adv-section tt-adv-section-last">
+            <!-- [팀 피드백 숨김] 선호 우선순위 — 요소는 유지(값은 기본 1순위로 전송), UI만 숨김 -->
+            <div class="tt-adv-section tt-adv-section-last" style="display:none;">
               <label class="tt-adv-label">선호 우선순위
                 <span class="tt-hint">(선호끼리 충돌할 때 무엇을 먼저 지킬지 — 같은 순위도 가능해요)</span></label>
               <div class="tt-row">
@@ -1599,8 +1613,8 @@
       </div>
     </div>
 
-    <!-- 무작위 강의 뽑기 (시간표 뷰 전용 — 뷰가 숨겨지면 함께 숨겨짐) -->
-    <div id="capsule-wrap">
+    <!-- 무작위 강의 뽑기 (시간표 뷰 전용) — [팀 피드백 숨김] 기능·백엔드 유지, UI만 숨김 -->
+    <div id="capsule-wrap" style="display:none;">
       <div class="capsule-tip">애매하게 남은 학점, 뭐로 채울지 고민된다면?<br><b>행운의 뽑기</b>를 해보세요! 🎉</div>
       <button id="capsule-btn" onclick="capsuleOpen()" aria-label="무작위 강의 뽑기">
         <img class="capsule-ico" src="/static/capsule_machine.png?v=3" alt="캡슐 뽑기 기계">
@@ -1650,25 +1664,6 @@
     </div>
   </section>
 
-  <section id="view-chat" class="view">
-    <h1>AI 챗봇</h1>
-    <div class="subtitle">수강신청, 재수강, 졸업 기준 등 수강편람 관련 질문을 물어보세요.</div>
-    <div class="view-chat-inner">
-      <div id="chat-panel">
-        <div id="chat-header">
-          <span>수강편람 챗봇</span>
-        </div>
-        <div id="chat-messages">
-          <div class="msg bot">안녕하세요! 수강신청, 재수강, 졸업 기준 등 수강편람 관련 질문을 물어보세요.</div>
-        </div>
-        <div id="chat-input-row">
-          <input id="chat-input" placeholder="질문을 입력하세요" onkeydown="if(event.key==='Enter') sendChat()">
-          <button id="chat-send" onclick="sendChat()">↑</button>
-        </div>
-      </div>
-    </div>
-  </section>
-
 </main>
 
 <div id="course-popover-backdrop" onclick="if(event.target===this) closePopover()">
@@ -1679,6 +1674,24 @@
     <div class="disclaimer">※ 일반적인 과목 소개이며, 실제 강의계획서와 다를 수 있어요.</div>
   </div>
 </div>
+
+<button id="chat-toggle" onclick="toggleChat()">
+  <img src="/static/chat_icon.png" alt="">
+  <span>챗봇</span>
+</button>
+<aside id="chat-panel">
+  <div id="chat-header">
+    <span>수강편람 챗봇</span>
+    <button onclick="toggleChat()">×</button>
+  </div>
+  <div id="chat-messages">
+    <div class="msg bot">안녕하세요! 수강신청, 재수강, 졸업 기준 등 수강편람 관련 질문을 물어보세요.</div>
+  </div>
+  <div id="chat-input-row">
+    <input id="chat-input" placeholder="질문을 입력하세요" onkeydown="if(event.key==='Enter') sendChat()">
+    <button id="chat-send" onclick="sendChat()">↑</button>
+  </div>
+</aside>
 
 <script>
 const API = "";
@@ -2461,7 +2474,8 @@ function closePopover() { document.getElementById('course-popover-backdrop').cla
 
 // ── 우측 사이드 채팅 패널 ──
 function toggleChat() {
-  switchView('chat');
+  document.getElementById('chat-panel').classList.toggle('open');
+  document.getElementById('chat-toggle').classList.toggle('hidden');
 }
 
 function escapeHtml(str) {
@@ -2691,14 +2705,9 @@ function ttRenderSpecPopup(name, secs) {
   const profOpts = ['<option value="">상관없음</option>']
     .concat(profs.map(p => `<option value="${ttEsc(p)}" ${sp.교수 === p ? 'selected' : ''}>${ttEsc(p)}</option>`))
     .join('');
-  const 중요도 = sp.중요도 || '';
   el.innerHTML = `<div class="tt-spec-card">
       <div class="tt-spec-title">${ttEsc(name)}</div>
-      <div class="tt-spec-sub">얼마나 꼭 듣고 싶은지, 원하는 교수·분반을 정하세요</div>
-      <label class="tt-spec-row"><span>넣기</span><select id="tt-spec-imp">
-        <option value="" ${중요도 !== '필수' ? 'selected' : ''}>되도록 넣기</option>
-        <option value="필수" ${중요도 === '필수' ? 'selected' : ''}>꼭 넣기 (다른 희망과 겹치면 우선)</option>
-      </select></label>
+      <div class="tt-spec-sub">원하는 교수·분반을 정하세요 (희망과목은 최우선으로 넣어드려요)</div>
       ${secs.length ? '' : '<div class="tt-hint">이번 학기 개설 분반 정보가 없어요 — 교수·분반은 상관없음만 가능해요.</div>'}
       <label class="tt-spec-row"><span>교수</span><select id="tt-spec-prof">${profOpts}</select></label>
       <label class="tt-spec-row"><span>분반</span><select id="tt-spec-sec"></select></label>
@@ -2731,8 +2740,7 @@ function ttApplySpec() {
   const name = el._name;
   const 교수 = document.getElementById('tt-spec-prof').value;
   const 분반 = document.getElementById('tt-spec-sec').value;
-  const 중요도 = document.getElementById('tt-spec-imp').value;
-  if (교수 || 분반 || 중요도) ttWantSpec[name] = { 교수, 분반, 중요도 };
+  if (교수 || 분반) ttWantSpec[name] = { 교수, 분반 };
   else delete ttWantSpec[name];
   el.style.display = 'none';
   ttRenderTags('want');
@@ -2752,7 +2760,7 @@ function ttRenderTags(kind) {
     // 희망 과목: 태그 몸통 클릭 → 교수·분반 지정 팝업, ×만 제거. 지정하면 배지로 표시.
     wrap.innerHTML = list.map((name, i) => {
       const sp = ttWantSpec[name] || {};
-      const badge = [sp.중요도 === '필수' ? '꼭' : '', sp.교수, sp.분반 ? sp.분반 + '분반' : '']
+      const badge = [sp.교수, sp.분반 ? sp.분반 + '분반' : '']
         .filter(Boolean).join(' · ');
       return `<span class="tt-tag tt-tag-want">` +
         `<span class="tt-tag-body" onclick="ttOpenSpec(${i})" title="클릭하면 교수·분반을 지정할 수 있어요">` +
@@ -2916,8 +2924,8 @@ function ttCollectBody() {
     학년: parseInt(document.getElementById('tt-grade').value, 10),
     선호: document.getElementById('tt-prefer').value,
     목표학점: parseInt(document.getElementById('tt-credits').value, 10) || 18,
-    전공개수: parseInt(document.getElementById('tt-major-limit').value, 10) || 0,
-    교양개수: parseInt(document.getElementById('tt-ge-limit').value, 10) || 0,
+    전공개수: Math.min(7, parseInt(document.getElementById('tt-major-limit').value, 10) || 0),
+    교양개수: Math.min(7, parseInt(document.getElementById('tt-ge-limit').value, 10) || 0),
     사이버강좌: document.getElementById('tt-cyber').checked,
     동선최적화: document.getElementById('tt-move-opt').checked,
     희망과목: ttWant, 이수과목: ttTaken,
@@ -3024,10 +3032,10 @@ function ttRenderGrid(courses) {
         const color = colorMap[c.교과목명] || '#B4B2A9';
         const sub = [c.강의실, c.교수].filter(Boolean).map(ttEsc).join(' · ');
         const elearn = c.이러닝 ? `<span class="tt-block-elearn">💻 e-러닝</span>` : '';
-        // 편집 모드: 블록 우상단 ×로 삭제. 평소: 고정 과목이면 📌.
+        // 편집 모드: 블록 우상단 ×로 삭제. ([팀 피드백 숨김] 핀 고정 📌 표시 제거)
         const corner = ttEditMode
           ? `<span class="tt-block-del" onclick="ttBlockDel(event,'${ttEsc(c.학수번호)}','${ttEsc(c.분반)}')" title="이 과목 삭제">×</span>`
-          : (ttIsPinned(c.학수번호, c.분반) ? `<span class="tt-block-pin" title="고정된 과목">📌</span>` : '');
+          : '';
         blocksHtml += `<div class="tt-course-block" style="top:${top}px;height:${height}px;background:${color};" title="${ttEsc(c.교과목명)} · ${ttEsc(c.교수)} · ${ttEsc(c.강의실)}">
           ${corner}<b>${ttEsc(c.교과목명)}</b>
           <span class="tt-block-sub">${sub}</span>
@@ -3164,8 +3172,8 @@ function ttCourseCells(c, idx, gid) {
   const time = c.사이버 ? '사이버(시간 지정 없음)' : c.slots.map(([d, s, e]) =>
     `${d} ${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}~${String(Math.floor(e/60)).padStart(2,'0')}:${String(e%60).padStart(2,'0')}`
   ).join(', ');
-  const pinned = ttIsPinned(c.학수번호, c.분반);
   // 강의계획서 사이트 점검(~7/27) 임시 숨김: 계획서 세부 버튼 셀 제거
+  // [팀 피드백 숨김] 핀 고정 열 제거 — 기능 유지, UI만 숨김
   return `<td><span class="tt-copy-name" data-copy="${ttEsc(c.학수번호 || c.교과목명)}" data-label="${ttEsc(c.교과목명)}"
              onclick="ttCopyFromBtn(this)" title="클릭하면 학수번호 복사(수강신청용)">${ttEsc(c.교과목명)}</span> ${elearn}</td>
     <td>${c.학점}</td>
@@ -3173,10 +3181,7 @@ function ttCourseCells(c, idx, gid) {
     <td>${ttEsc(time)}</td>
     <td>${ttEsc(c.강의실)}</td>
     <td>${ttEsc(c.교수)}</td>
-    <td>${ttEsc(c.분반)}</td>
-    <td><button class="tt-pin-btn ${pinned ? 'on' : ''}" data-code="${ttEsc(c.학수번호 || '')}"
-        data-sec="${ttEsc(c.분반 || '')}" data-time="${ttEsc(c.시간 || '')}" data-name="${ttEsc(c.교과목명 || '')}"
-        onclick="ttTogglePin(this)" title="${pinned ? '고정 해제' : '이 분반으로 고정 — 다시 생성해도 유지돼요'}">📌</button></td>`;
+    <td>${ttEsc(c.분반)}</td>`;
 }
 
 // 신청 과목 목록 — 이수구분(전공필수/기초/선택·교양…)별로 묶어서 표시.
@@ -3209,7 +3214,7 @@ function ttRenderCourseTable(courses) {
   });
   return `<div class="tt-table-wrap"><table class="tt-course-table">
     <thead><tr>
-      <th>구분</th><th>과목명</th><th>학점</th><th>학년</th><th>시간</th><th>강의실</th><th>교수</th><th>분반</th><th>고정</th>
+      <th>구분</th><th>과목명</th><th>학점</th><th>학년</th><th>시간</th><th>강의실</th><th>교수</th><th>분반</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
@@ -3276,7 +3281,8 @@ function ttShowAlt(idx) {
   html += ttResultHtml(view);
   document.getElementById('tt-results').innerHTML = html;
   document.getElementById('tt-results').style.display = '';
-  document.getElementById('tt-nl-box').style.display = '';
+  // [팀 피드백 숨김] 말로 조정하기 — 기능 유지, UI만 숨김
+  // document.getElementById('tt-nl-box').style.display = '';
 }
 
 // ── 직접 편집(독립 모드) ─────────────────────────────────────────
@@ -3336,7 +3342,7 @@ function ttEditAdd(idx) {
   }
   if (!x.사이버) {
     const conf = ttEditConflict(x.slots);
-    if (conf) { ttToast(`⛔ '${x.교과목명}'은(는) '${conf}'과(와) 시간이 겹쳐 넣지 못했어요`); return; }
+    if (conf) { ttToast(`⛔ '${x.교과목명}'은(는) '${conf}'과(와) 겹쳐 넣지 못했어요`); return; }
   }
   ttEditSnapshot();
   ttEditTable.push({ ...x, 트랙: '직접추가' });
@@ -3465,7 +3471,7 @@ function ttPreviewSearch(idx) {
     div.innerHTML = `<b>${ttEsc(x.교과목명)}</b>`;
     body.appendChild(div);
   });
-  if (conf) ttEditWarn(`⛔ '${x.교과목명}'은(는) '${conf}'과(와) 시간이 겹쳐 넣을 수 없어요`);
+  if (conf) ttEditWarn(`⛔ '${x.교과목명}'은(는) '${conf}'과(와) 겹쳐 넣을 수 없어요`);
 }
 
 function ttPreviewClear() {
@@ -3619,11 +3625,11 @@ function ttApplyDelta(a) {
 
 function ttResultHtml(data) {
   const m = data.metrics;
+  // [팀 피드백 숨김] 졸업요건 진단 — '아직 안 들은 전공필수/기초' 지표 제거(진단 기능 숨김)
   let html = `<div class="tt-metrics">
     <div class="tt-metric"><div class="num">${m.총학점.toFixed(1)} / ${m.목표}</div><div class="label">총 학점 / 목표</div></div>
     <div class="tt-metric"><div class="num">${m.과목수}</div><div class="label">과목 수</div></div>
     <div class="tt-metric ${m.충돌 ? 'bad' : ''}"><div class="num">${m.충돌}</div><div class="label">시간 충돌</div></div>
-    <div class="tt-metric ${m.남은필수 ? 'bad' : ''}"><div class="num">${m.남은필수}</div><div class="label">아직 안 들은 전공필수/기초</div></div>
   </div>`;
 
   if (data.경고 && data.경고.length) {
@@ -3648,8 +3654,9 @@ function ttResultHtml(data) {
     html += ttRenderMoveTable(data.이동동선);
   }
 
-  html += `<div class="tt-section-title">졸업요건 진단</div>`;
-  html += ttRenderDiagnosis(data.진단);
+  // [팀 피드백 숨김] 졸업요건 진단 카드 — 기능 유지, UI만 숨김
+  // html += `<div class="tt-section-title">졸업요건 진단</div>`;
+  // html += ttRenderDiagnosis(data.진단);
 
   if (data.이수제외text || (data.조건제외 && data.조건제외.length)) {
     html += `<div class="tt-section-title">참고 사항</div>`;
