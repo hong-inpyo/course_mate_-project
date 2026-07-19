@@ -18,14 +18,7 @@ from pydantic import BaseModel
 
 _ROOT = os.path.dirname(os.path.abspath(__file__))   # 프로젝트 루트 (이 파일 위치)
 
-from chatbot.pipeline import (
-    search,
-    generate_answer,
-    build_vector_db,
-    DB_DIR,
-    COLLECTION_NAME,
-)
-import chromadb
+from chatbot.pipeline import search, generate_answer
 from features.roadmap_logic import (
     load_and_clean, scan_available_excels, EXCEL_DIR,
     CATEGORY_INFO, CATEGORY_ORDER, semester_sort_key,
@@ -33,19 +26,7 @@ from features.roadmap_logic import (
 
 app = FastAPI(title="세종대 수강편람 챗봇 API")
 
-# -------------------------------------------------
-# ChromaDB 컬렉션이 없으면 서버 시작 시 자동 생성
-# -------------------------------------------------
-client = chromadb.PersistentClient(path=DB_DIR)
 
-try:
-    client.get_collection(COLLECTION_NAME)
-    print("✅ ChromaDB collection already exists.")
-except Exception:
-    print("⚠️ ChromaDB collection not found. Building...")
-    build_vector_db()
-    print("✅ ChromaDB build complete.")
-    
 # ────────────────────────────────────────────────────────────────
 # 챗봇 API
 # ────────────────────────────────────────────────────────────────
@@ -56,8 +37,11 @@ class ChatRequest(BaseModel):
 
 @app.post("/api/chat")
 def chat(req: ChatRequest):
-    hits = search(req.question, top_k=10)
-    answer = generate_answer(req.question, hits)
+    try:
+        hits = search(req.question, top_k=10)
+        answer = generate_answer(req.question, hits)
+    except Exception as e:
+        return {"answer": f"챗봇을 사용할 수 없습니다: {e}", "sources": []}
     return {
         "answer": answer,
         "sources": [
@@ -245,9 +229,7 @@ from advisor import advisor_agent
 from advisor.knowledge_base import CUR_XLSX, OLD_XLSX, RENAME_JSON
 
 _TT_DIR = os.path.join(_ROOT, "data")
-_DF = T.load_courses(CUR_XLSX)          # 기동 시 1회 로드(캐시)
-_EQMAP = equiv_courses.load()
-_YCOL = next(c for c in _DF.columns if "학년" in c)
+_TIMETABLE_ERROR = None
 
 
 def _all_course_names():
@@ -264,8 +246,22 @@ def _all_course_names():
     return sorted(n for n in names if n and n != "nan")
 
 
-_NAMES = _all_course_names()
-_DEPTS = sorted(_DF["개설학과전공"].astype(str).unique())
+try:
+    _DF = T.load_courses(CUR_XLSX)          # 기동 시 1회 로드(캐시)
+    _EQMAP = equiv_courses.load()
+    _YCOL = next(c for c in _DF.columns if "학년" in c)
+    _NAMES = _all_course_names()
+    _DEPTS = sorted(_DF["개설학과전공"].astype(str).unique())
+except Exception as e:
+    # 시간표 데이터(강의시간표 엑셀 등)가 배포 환경에 없어도 챗봇·로드맵 등 나머지 기능은
+    # 정상 동작해야 하므로, 여기서 앱 전체가 죽지 않게 막고 /api/timetable/* 만 비활성화한다.
+    print(f"[경고] 시간표 데이터 로드 실패 — /api/timetable/* 비활성화됨: {e}")
+    _TIMETABLE_ERROR = str(e)
+    _DF = pd.DataFrame()
+    _EQMAP = {}
+    _YCOL = None
+    _NAMES = []
+    _DEPTS = []
 
 
 def _tt_suggest_taken(dept, grade):
@@ -397,6 +393,9 @@ def _diag_json(d: dict) -> dict:
 
 @app.get("/api/timetable/meta")
 def tt_meta():
+    if _TIMETABLE_ERROR:
+        return {"오류": f"시간표 데이터를 불러오지 못했습니다: {_TIMETABLE_ERROR}",
+                "학과들": [], "과목명들": [], "기본학과": ""}
     return {"학과들": _DEPTS, "과목명들": _NAMES,
             "기본학과": "인공지능데이터사이언스학과"}
 
@@ -602,6 +601,8 @@ def _ban_candidate(chosen, protected):
 def _recommend_alts(p: TimetableProfile, n_alts=3):
     """추천안 최대 n개 생성. 1안=최적해, 2·3안=직전 안에서 덜 중요한 과목 하나를
     제외과목(하드 조건)으로 돌려 다른 과목으로 재구성한 대안(결정론적)."""
+    if _TIMETABLE_ERROR:
+        return {"error": f"시간표 데이터를 불러오지 못해 추천을 만들 수 없습니다: {_TIMETABLE_ERROR}"}
     profile = _to_profile(p)
     진단 = requirements.diagnose_any(profile, _EQMAP)
     if "질문" in 진단 or "오류" in 진단:

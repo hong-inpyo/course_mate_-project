@@ -10,14 +10,11 @@
       이 함수는 "일반적으로 이런 걸 배우는 과목이다" 수준의 참고용 설명만 담당.
 """
 
-import json
 import os
 from openai import OpenAI
 
-_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # 프로젝트 루트
-import os
+from chatbot.pipeline import load_api_key
 
-UPSTAGE_API_KEY = os.getenv("UPSTAGE_API_KEY")
 CHAT_BASE_URL = "https://api.upstage.ai/v1"
 
 SYSTEM_PROMPT = (
@@ -35,7 +32,7 @@ SYSTEM_PROMPT = (
 
 
 def explain_course(course_name):
-    client = OpenAI(api_key=UPSTAGE_API_KEY, base_url=CHAT_BASE_URL)
+    client = OpenAI(api_key=load_api_key(), base_url=CHAT_BASE_URL)
     resp = client.chat.completions.create(
         model="solar-pro3",
         messages=[

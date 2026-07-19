@@ -42,46 +42,41 @@ CHAT_BASE_URL = "https://api.upstage.ai/v1"
 
 
 def load_api_key(path=SECRETS_FILE):
-    """같은 폴더의 secrets.json에서 API 키를 읽어온다.
-    키 이름은 UPSTAGE_API_KEY / upstage_api_key / api_key 중 아무거나 지원."""
-    if not os.path.exists(path):
-        raise SystemExit(f"secrets.json을 찾을 수 없습니다: {path}")
-
-    with open(path, encoding="utf-8") as f:
-        secrets = json.load(f)
-
-    for key_name in ("UPSTAGE_API_KEY", "upstage_api_key", "api_key"):
-        if key_name in secrets and secrets[key_name]:
-            return secrets[key_name]
-
-    raise SystemExit(
-        f"secrets.json 안에서 API 키를 찾지 못했습니다. "
-        f"'UPSTAGE_API_KEY' 같은 키 이름으로 저장되어 있는지 확인해주세요. "
-        f"(파일 안 키 목록: {list(secrets.keys())})"
-    )
-
-
-def load_api_key(path=SECRETS_FILE):
-    # 1순위: Render 환경변수
+    """API 키를 읽어온다. 우선순위: 1) 환경변수 UPSTAGE_API_KEY  2) secrets.json  3) 둘 다 없으면 오류.
+    (Render 등 배포 환경에는 secrets.json이 없으므로 환경변수를 우선 사용한다.)
+    secrets.json 안의 키 이름은 UPSTAGE_API_KEY / upstage_api_key / api_key 중 아무거나 지원."""
     env_key = os.getenv("UPSTAGE_API_KEY")
     if env_key:
         return env_key
 
-    # 2순위: 로컬 secrets.json
     if os.path.exists(path):
         with open(path, encoding="utf-8") as f:
             secrets = json.load(f)
-
         for key_name in ("UPSTAGE_API_KEY", "upstage_api_key", "api_key"):
             if key_name in secrets and secrets[key_name]:
                 return secrets[key_name]
 
     raise RuntimeError(
-        "UPSTAGE_API_KEY가 없습니다. "
-        "환경변수 또는 secrets.json을 설정하세요."
+        "UPSTAGE_API_KEY를 찾을 수 없습니다. 환경변수 UPSTAGE_API_KEY를 설정하거나, "
+        f"로컬 개발용으로 {path}에 secrets.json 파일을 두어주세요."
     )
 
-UPSTAGE_API_KEY = load_api_key()
+
+try:
+    UPSTAGE_API_KEY = load_api_key()
+except RuntimeError as e:
+    # 앱 임포트(기동) 시점에는 죽지 않고, 실제로 키가 필요한 호출(search/generate_answer 등)
+    # 시점에 명확한 에러를 내도록 미룬다 (Render 콜드스타트/헬스체크가 막히지 않게 하기 위함).
+    print(f"[경고] {e}")
+    UPSTAGE_API_KEY = None
+
+
+def _require_api_key():
+    if not UPSTAGE_API_KEY:
+        raise RuntimeError(
+            "UPSTAGE_API_KEY가 설정되지 않았습니다. Render 환경변수에 UPSTAGE_API_KEY를 추가해주세요."
+        )
+
 
 # ────────────────────────────────────────────────────────────────
 # 1단계: 임베딩
@@ -91,6 +86,7 @@ def embed_texts(texts, model="solar-embedding-2-passage"):
     """텍스트 리스트를 받아서 임베딩 벡터 리스트를 반환.
     Upstage 임베딩 API는 한 번에 여러 개(batch)를 받을 수 있음.
     solar-embedding-2 계열: 1024차원, 8K 컨텍스트 (기존 1-large 대비 더 김)."""
+    _require_api_key()
     headers = {"Authorization": f"Bearer {UPSTAGE_API_KEY}"}
     body = {"input": texts, "model": model}
     resp = requests.post(EMBEDDING_URL, headers=headers, json=body)
@@ -111,6 +107,9 @@ def embed_query(text):
 # ────────────────────────────────────────────────────────────────
 
 def build_vector_db(chunks_path=CHUNKS_FILE, batch_size=20):
+    _require_api_key()
+    if not os.path.exists(chunks_path):
+        raise RuntimeError(f"청크 파일을 찾을 수 없습니다: {chunks_path}")
     with open(chunks_path, encoding="utf-8") as f:
         chunks = [json.loads(line) for line in f]
 
@@ -152,21 +151,21 @@ def build_vector_db(chunks_path=CHUNKS_FILE, batch_size=20):
 # 3단계: 검색
 # ────────────────────────────────────────────────────────────────
 
-def search(question, top_k=20):
+def search(question, top_k=15):
+    if not os.path.exists(DB_DIR):
+        raise RuntimeError(
+            f"벡터DB를 찾을 수 없습니다: {DB_DIR}. "
+            "cache/chroma_db 폴더가 배포에 포함되었는지, 또는 "
+            "python chatbot/pipeline.py 로 먼저 벡터DB를 구축했는지 확인해주세요."
+        )
     client = chromadb.PersistentClient(path=DB_DIR)
-
     try:
         collection = client.get_collection(COLLECTION_NAME)
-    except Exception:
-        print("Collection이 없어서 새로 생성합니다.")
-        build_vector_db()
-        collection = client.get_collection(COLLECTION_NAME)
+    except Exception as e:
+        raise RuntimeError(f"벡터DB 컬렉션을 열지 못했습니다: {e}") from e
 
     query_vector = embed_query(question)
-    results = collection.query(
-        query_embeddings=[query_vector],
-        n_results=top_k
-    )
+    results = collection.query(query_embeddings=[query_vector], n_results=top_k)
 
     hits = []
     for doc, meta, dist, cid in zip(
@@ -181,14 +180,15 @@ def search(question, top_k=20):
             "text": doc,
             "distance": dist,
         })
-
     return hits
+
 
 # ────────────────────────────────────────────────────────────────
 # 4단계: 답변 생성 (Chat API)
 # ────────────────────────────────────────────────────────────────
 
 def generate_answer(question, hits):
+    _require_api_key()
     context = "\n\n---\n\n".join(
         f"[출처: {h['section_path']}]\n{h['text']}" for h in hits
     )
@@ -233,7 +233,7 @@ def generate_answer(question, hits):
 # 전체 파이프라인
 # ────────────────────────────────────────────────────────────────
 
-def ask(question, top_k=20, verbose=True):
+def ask(question, top_k=15, verbose=True):
     hits = search(question, top_k=top_k)
     if verbose:
         print("검색된 청크:")

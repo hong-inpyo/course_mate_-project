@@ -1,5 +1,5 @@
 """
-이수체계도 관련 순수 로직 (Streamlit 의존성 없음)
+이수체계도 관련 순수 로직
 
 server.py(FastAPI)와 personal_roadmap.py(Streamlit)가 이 모듈을 공통으로 import해서 씀.
 UI 프레임워크에 얽매이지 않는 데이터 처리 로직만 여기 모아둠.
