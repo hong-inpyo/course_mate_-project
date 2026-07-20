@@ -22,6 +22,16 @@ _CODE = {
     "전기": "전공기초", "전필": "전공필수", "전선": "전공선택",
 }
 
+# 교과과정표 엑셀에 균필(균형교양) 목록이 빠진 학과 보정.
+# ※ 융합전공 등 대부분의 빈 풀은 '균형교양 없음'이 맞아 여기 넣지 않는다.
+#   아래는 '균형교양을 이수해야 하는데 표에서 목록이 누락된' 학과만(수강편람 확인).
+_GE_POOL_OVERRIDE = {
+    # 회화과(미대 계열) — 역사와사상·자연과과학·경제와사회 3영역에서 9학점.
+    "회화과": ["동서양의사상과윤리", "성서와기독교", "세계사", "한국현대사",
+             "생명과학의이해", "수의세계", "지구환경과기후변화", "현대과학으로의초대",
+             "경영학", "경제학", "미디어빅뱅과방송", "현대사회와법"],
+}
+
 
 def graduation_credits(dept, year):
     """졸업 이수학점. 표준 130이며, 학과·입학년도별 예외만 반영한다.
@@ -59,22 +69,55 @@ def available(excel_dir=EXCEL_DIR):
     return out
 
 
-def _match_dept(dept, av):
-    """학과명을 폴더의 파일명과 매칭. 정확 일치 우선, 없으면 부분일치
-    (예: '데이터사이언스학과' → '인공지능데이터사이언스학과')."""
-    if dept in av:
-        return dept
-    cand = [d for d in av if dept in d or d in dept]
-    return cand[0] if cand else None
+# 개명된 학과 — 시간표엔 옛 이름이 남아 있는데 교과과정 파일은 새 이름이다.
+# 옛/새 파일이 둘 다 있을 수 있으므로(2025는 옛 이름, 2026은 새 이름)
+# 최종 선택은 _resolve가 '요청 연도가 있는 쪽'으로 한다.
+_RENAMED = {"일어일문학전공": "국제일본학전공"}    # 2026학년도 개명
+
+
+def _candidates(dept, av):
+    """학과명 → 교과과정 파일명 후보들(정확일치 → 띄어쓰기 무시 → 개명 → 부분일치)."""
+    out = []
+
+    def add(x):
+        if x in av and x not in out:
+            out.append(x)
+
+    add(dept)
+    # 시간표는 '럭셔리 브랜드 디자인 융합전공', 파일명은 '럭셔리브랜드디자인 융합전공' —
+    # 같은 학과인데 띄어쓰기만 다르다.
+    nospace = dept.replace(" ", "")
+    for d in av:
+        if d.replace(" ", "") == nospace:
+            add(d)
+    for old, new in _RENAMED.items():
+        if old in dept:
+            add(new)
+    # 학부 접두어 떼기: '호텔관광외식경영학부 외식경영학전공' → '외식경영학전공'.
+    # 반드시 공백 경계로만 자른다. 글자로만 뒤를 맞추면 '호텔관광외식경영학부'가
+    # '경영학부'로, '콘텐츠소프트웨어학과'가 '소프트웨어학과'로 잘못 잡힌다.
+    # 반대 방향(질의가 파일명 안에 든 경우)도 없어진 학과를 후신에 붙이므로 쓰지 않는다
+    # — 데이터사이언스학과→인공지능데이터사이언스학과.
+    tokens = dept.split()
+    for i in range(1, len(tokens)):
+        tail = " ".join(tokens[i:])
+        add(tail)
+        for d in av:
+            if d.replace(" ", "") == tail.replace(" ", ""):
+                add(d)
+    return out
 
 
 def _resolve(dept, year):
     """(학과, 연도) → (파일경로, 실제학과명, 실제연도, 폴백여부) 또는 None.
     정확한 연도 파일이 없으면 입학년도 이하 중 가장 가까운 연도(없으면 최소 연도)로 폴백."""
     av = available()
-    dept_hit = _match_dept(dept, av)
-    if not dept_hit:
+    cands = _candidates(dept, av)
+    if not cands:
         return None
+    # 개명 전후 파일이 둘 다 있으면(일어일문학전공 2025 / 국제일본학전공 2026)
+    # 요청한 입학년도를 가진 쪽을 고른다.
+    dept_hit = next((c for c in cands if year in av[c]), cands[0])
     years = av[dept_hit]
     if year in years:
         y, fb = year, False
@@ -115,10 +158,13 @@ def load(dept, year):
         except (ValueError, IndexError):
             credit[name] = 3.0
 
+    # 표에 균필 목록이 아예 없으면(회화과 등 누락 학과) 보정 풀로 채운다.
+    ge_pool = buckets["균형교양필수"] or list(_GE_POOL_OVERRIDE.get(dept_hit, []))
+
     return {
         "학과": dept_hit, "연도": y, "폴백": fb,
         "공통필수": buckets["공통필수"],
-        "균형교양_pool": buckets["균형교양필수"],
+        "균형교양_pool": ge_pool,
         "학문기초": buckets["학문기초교양필수"],
         "전공기초": buckets["전공기초"],
         "전공필수": buckets["전공필수"],

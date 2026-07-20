@@ -198,14 +198,12 @@ def advise(profile, verbose=True, force_auto=False):
     미확인 = requirements.validate_courses(profile, _known_course_names())  # 과목명 먼저 DB 대조
     context = build_context(profile, rec, 진단, 미확인)
 
-    # Solar 호출 — 환경변수 UPSTAGE_API_KEY 우선, 없으면 로컬 개발용 secrets.json
+    # Solar 호출 — 환경변수 우선(배포), 없으면 secrets.json(로컬)
     key = os.getenv("UPSTAGE_API_KEY")
+    if not key and os.path.exists(os.path.join(_ROOT, "secrets.json")):
+        key = json.load(open(os.path.join(_ROOT, "secrets.json"), encoding="utf-8")).get("UPSTAGE_API_KEY")
     if not key:
-        secrets_path = os.path.join(_ROOT, "secrets.json")
-        if os.path.exists(secrets_path):
-            key = json.load(open(secrets_path, encoding="utf-8")).get("UPSTAGE_API_KEY")
-    if not key:
-        raise RuntimeError("UPSTAGE_API_KEY가 설정되지 않았습니다. 환경변수를 확인해주세요.")
+        raise RuntimeError("UPSTAGE_API_KEY 미설정 — 환경변수 또는 secrets.json을 설정하세요.")
     from openai import OpenAI
     client = OpenAI(api_key=key, base_url="https://api.upstage.ai/v1")
     r = client.chat.completions.create(

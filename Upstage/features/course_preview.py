@@ -10,12 +10,27 @@
       이 함수는 "일반적으로 이런 걸 배우는 과목이다" 수준의 참고용 설명만 담당.
 """
 
+import json
 import os
 from openai import OpenAI
 
-from chatbot.pipeline import load_api_key
-
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   # 프로젝트 루트
 CHAT_BASE_URL = "https://api.upstage.ai/v1"
+
+
+def _load_key():
+    """UPSTAGE_API_KEY: 환경변수 우선(배포), 없으면 secrets.json(로컬), 둘 다 없으면 RuntimeError.
+    import 시점이 아니라 호출 시점에 읽어 서버 기동을 막지 않는다."""
+    key = os.getenv("UPSTAGE_API_KEY")
+    if key:
+        return key
+    path = os.path.join(_ROOT, "secrets.json")
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            k = json.load(f).get("UPSTAGE_API_KEY")
+        if k:
+            return k
+    raise RuntimeError("UPSTAGE_API_KEY 미설정 — 환경변수 또는 secrets.json을 설정하세요.")
 
 SYSTEM_PROMPT = (
     "너는 대학교 과목 소개를 도와주는 도우미야. "
@@ -32,7 +47,7 @@ SYSTEM_PROMPT = (
 
 
 def explain_course(course_name):
-    client = OpenAI(api_key=load_api_key(), base_url=CHAT_BASE_URL)
+    client = OpenAI(api_key=_load_key(), base_url=CHAT_BASE_URL)
     resp = client.chat.completions.create(
         model="solar-pro3",
         messages=[

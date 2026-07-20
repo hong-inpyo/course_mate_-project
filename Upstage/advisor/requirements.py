@@ -54,6 +54,7 @@ REQUIREMENTS = {
 
 
 def _taken_names(profile):
+    #profile에서 이수한 과목을 가져오고 거기서 성적이 FAIL 리스트에 없는(낙제 하지 않은) 것들만 추출 후 과목에 담기
     return {c["과목"] for c in profile.get("이수과목", []) if c.get("성적") not in FAIL}
 
 
@@ -182,7 +183,7 @@ def diagnose_auto(profile, eqmap=None):
     eqmap = eqmap if eqmap is not None else equiv_courses.load()
 
     def mark(c):
-        got = _covered(c, taken, eqmap)
+        got = _covered(c, taken, eqmap) #_coverd는 공식동일과목을 이수했으면 그 과목명 그 과목 자체를 이수했으면 그 과목을 반환
         return None if got is None else (c if got == c else f"{c}(동일과목 '{got}' 이수)")
 
     out = {"_출처": f"수강편람 {y}학년도 교과과정 자동추출(트랙: {name}) — 학과 공지와 대조 권장"}
@@ -273,7 +274,7 @@ def diagnose_curriculum(profile, eqmap=None):
         return None
 
     taken = _taken_names(profile)
-    eqmap = eqmap if eqmap is not None else equiv_courses.load()
+    eqmap = eqmap if eqmap is not None else equiv_courses.load() #이미 로드 됐으면 그걸 사용 아니면 로드
     cr = req["학점"]
 
     def mark(c):
@@ -299,12 +300,14 @@ def diagnose_curriculum(profile, eqmap=None):
 
     # 3) 균형교양필수 — 엑셀의 균필 목록이 곧 학과별 인정 풀.
     #    필요 학점은 입학년도 규정: 2023학번까지 6학점, 2024학번부터 9학점.
+    #    인정 풀이 아예 없는 학과(융합전공 등)는 균형교양 미해당 → 필요 0학점.
     pool = req["균형교양_pool"]
-    필요학점 = 6 if int(profile["학번"]) <= 2023 else 9
+    필요학점 = (6 if int(profile["학번"]) <= 2023 else 9) if pool else 0
     이수 = [m for c in pool if (m := mark(c))]
     이수학점 = min(len(이수) * 3, 필요학점)
     out["균형교양필수"] = {
-        "필요": f"균형교양 {필요학점}학점(학과 인정 과목 {len(pool)}개 중)",
+        "필요": (f"균형교양 {필요학점}학점(학과 인정 과목 {len(pool)}개 중)" if pool
+               else "균형교양 없음(해당 학과 미해당)"),
         "이수영역": {"균형교양": 이수} if 이수 else {},
         "이수학점": 이수학점,
         "남은학점": max(0, 필요학점 - 이수학점),
@@ -346,7 +349,7 @@ def diagnose_any(profile, eqmap=None):
     AI데사 2022는 하드코딩(정밀 검증본)을 쓰고, 나머지 학과·학번은 교과과정표 엑셀로 커버한다.
     엑셀도 없으면 수강편람 PDF 자동추출(diagnose_auto)을 마지막 수단으로 쓴다.
     """
-    if (profile["학과"], profile["학번"]) in REQUIREMENTS:
+    if (profile["학과"], profile["학번"]) in REQUIREMENTS: # REQUIREMENTS는 인데사 하드코딩
         return diagnose(profile, eqmap)
     cur = diagnose_curriculum(profile, eqmap)
     if cur is not None:

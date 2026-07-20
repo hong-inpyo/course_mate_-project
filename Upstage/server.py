@@ -18,7 +18,8 @@ from pydantic import BaseModel
 
 _ROOT = os.path.dirname(os.path.abspath(__file__))   # 프로젝트 루트 (이 파일 위치)
 
-from chatbot.pipeline import search, generate_answer
+# 챗봇(chromadb·벡터DB)은 무거워서 import 시점에 올리지 않고, 실제 호출될 때 지연 로딩한다.
+# 배포 환경(Render 등)에 벡터DB가 없어도 서버 기동과 나머지 기능은 정상 동작하게 하기 위함.
 from features.roadmap_logic import (
     load_and_clean, scan_available_excels, EXCEL_DIR,
     CATEGORY_INFO, CATEGORY_ORDER, semester_sort_key,
@@ -37,11 +38,16 @@ class ChatRequest(BaseModel):
 
 @app.post("/api/chat")
 def chat(req: ChatRequest):
+    # 지연 import: 벡터DB(chromadb)가 없거나 키가 없어도 서버 자체는 죽지 않고
+    # 이 엔드포인트만 안내 메시지를 돌려준다.
     try:
+        from chatbot.pipeline import search, generate_answer
         hits = search(req.question, top_k=10)
         answer = generate_answer(req.question, hits)
     except Exception as e:
-        return {"answer": f"챗봇을 사용할 수 없습니다: {e}", "sources": []}
+        return {"answer": "지금은 챗봇 답변을 제공할 수 없어요. "
+                          "(검색용 벡터DB가 준비되지 않았거나 API 키가 설정되지 않았습니다.)",
+                "sources": [], "error": str(e)}
     return {
         "answer": answer,
         "sources": [
@@ -225,11 +231,20 @@ import pandas as pd
 from advisor import timetable_solver as T
 from advisor import equiv_courses
 from advisor import requirements
+from advisor import curriculum          # 학과명→교과과정 파일 해석(개명·띄어쓰기 흡수)
 from advisor import advisor_agent
+from advisor import timetable_explain   # 추천안 해설(선택) — TT_EXPLAIN 로 on/off
 from advisor.knowledge_base import CUR_XLSX, OLD_XLSX, RENAME_JSON
 
+TT_EXPLAIN = False   # 추천안 Solar 해설 사용 여부. False면 해설만 빠지고 나머지는 그대로 동작.
+# 솔버 탐색 노드 상한. 후보 과목끼리 시간이 잘 안 겹치면 조합이 폭발해 응답이 9초까지 늘어난다.
+# 탐색을 끊어도 best는 노드마다 갱신되므로 유효한 시간표가 남는다(검증: 8학과×2학년 전부 18학점 동일, 9초→2초).
+NODE_BUDGET = 20000
+
 _TT_DIR = os.path.join(_ROOT, "data")
-_TIMETABLE_ERROR = None
+_DF = T.load_courses(CUR_XLSX)          # 기동 시 1회 로드(캐시)
+_EQMAP = equiv_courses.load()
+_YCOL = next(c for c in _DF.columns if "학년" in c)
 
 
 def _all_course_names():
@@ -246,22 +261,59 @@ def _all_course_names():
     return sorted(n for n in names if n and n != "nan")
 
 
-try:
-    _DF = T.load_courses(CUR_XLSX)          # 기동 시 1회 로드(캐시)
-    _EQMAP = equiv_courses.load()
-    _YCOL = next(c for c in _DF.columns if "학년" in c)
-    _NAMES = _all_course_names()
-    _DEPTS = sorted(_DF["개설학과전공"].astype(str).unique())
-except Exception as e:
-    # 시간표 데이터(강의시간표 엑셀 등)가 배포 환경에 없어도 챗봇·로드맵 등 나머지 기능은
-    # 정상 동작해야 하므로, 여기서 앱 전체가 죽지 않게 막고 /api/timetable/* 만 비활성화한다.
-    print(f"[경고] 시간표 데이터 로드 실패 — /api/timetable/* 비활성화됨: {e}")
-    _TIMETABLE_ERROR = str(e)
-    _DF = pd.DataFrame()
-    _EQMAP = {}
-    _YCOL = None
-    _NAMES = []
-    _DEPTS = []
+_NAMES = _all_course_names()
+
+
+TT_YEARS = [2026, 2025, 2024]     # 드롭다운에 올릴 입학년도(학번)
+
+
+def _supported_depts(year):
+    """해당 입학년도에 시간표를 만들 수 있는 학과만 추린다.
+
+    시간표 엑셀의 '개설학과전공'에는 계열·단과대(IT계열, 대양휴머니티칼리지 등)와
+    옛 학과까지 94개가 섞여 있다. 그대로 드롭다운에 내보내면 골라도 결과가 안 나온다.
+
+    기준은 '그 입학년도에 이 학과 교과과정이 있는가'. 연도별로 따로 계산해야
+    2025엔 있고 2026엔 없어진 학과(국방시스템공학과·기계공학과 등)를 2025 학번이
+    고를 수 있고, 통합으로 사라진 학과는 2026에서 안 보인다.
+    학과명 표기가 시간표와 교과과정 파일 사이에 다른 경우(띄어쓰기·학부 접두어·개명)는
+    curriculum 쪽 해석을 그대로 쓴다 — 판정 로직을 두 군데 두면 어긋난다.
+    """
+    def has_curriculum(dept):
+        r = curriculum._resolve(dept, year)
+        return bool(r) and r[2] == year      # 다른 해로 폴백한 경우는 그 해에 없는 학과
+
+    out = []
+    for d in sorted(_DF["개설학과전공"].astype(str).unique()):
+        if not has_curriculum(d):
+            continue
+        try:
+            if "오류" in requirements.diagnose_any({"학과": d, "학번": year,
+                                                  "총이수학점": 0, "이수과목": []}):
+                continue
+        except Exception:
+            continue
+        out.append(d)
+    return out
+
+
+def _display_name(dept, year):
+    """화면에 보여줄 이름 — 개명된 학과는 그 해 교과과정의 이름으로 바꿔 보여준다.
+
+    시간표 데이터엔 옛 이름이 남아 있다(2026 '국제학부 일어일문학전공' → 실제 '국제일본학전공').
+    다만 학부 접두어만 다른 경우('글로벌인재학부 국제통상전공' ↔ 파일 '국제통상전공')는
+    접두어가 있는 쪽이 학생에게 익숙하므로 시간표 이름을 그대로 쓴다.
+    검색 키는 시간표 이름이어야 하므로 값(value)은 바꾸지 않는다.
+    """
+    r = curriculum._resolve(dept, year)
+    if not r:
+        return dept
+    hit = r[1]
+    return dept if dept.replace(" ", "").endswith(hit.replace(" ", "")) else hit
+
+
+_DEPTS_BY_YEAR = {y: [{"값": d, "이름": _display_name(d, y)} for d in _supported_depts(y)]
+                  for y in TT_YEARS}
 
 
 def _tt_suggest_taken(dept, grade):
@@ -370,6 +422,7 @@ def _course_json(c: dict) -> dict:
         "교수": _clean(sec.get("교수"), "미정"),
         "분반": str(_py(sec["분반"])), "사이버": bool(sec.get("사이버")),
         "이러닝": sec.get("이러닝") or "",
+        "언어": _clean(sec.get("언어"), ""),        # 해설: 영어강의 판정용
         "slots": [[str(d), int(s), int(e)] for d, s, e in sec["slots"]],
         "계획서": c.get("계획서"),
     }
@@ -393,10 +446,8 @@ def _diag_json(d: dict) -> dict:
 
 @app.get("/api/timetable/meta")
 def tt_meta():
-    if _TIMETABLE_ERROR:
-        return {"오류": f"시간표 데이터를 불러오지 못했습니다: {_TIMETABLE_ERROR}",
-                "학과들": [], "과목명들": [], "기본학과": ""}
-    return {"학과들": _DEPTS, "과목명들": _NAMES,
+    return {"학과들_연도별": {str(y): d for y, d in _DEPTS_BY_YEAR.items()},
+            "학번들": TT_YEARS, "과목명들": _NAMES,
             "기본학과": "인공지능데이터사이언스학과"}
 
 
@@ -532,7 +583,8 @@ def _solve_once(profile, 목표학점, 진단, fixed=None):
     rec = T.recommend_for_profile(profile, CUR_XLSX, OLD_XLSX, RENAME_JSON,
                                   target_credits=목표학점, equiv_map=_EQMAP,
                                   extra_courses=교양후보, group_limits=limits,
-                                  df=_DF, fixed_courses=fixed)  # 기동 시 로드한 df 재사용(엑셀 재파싱 방지)
+                                  df=_DF, fixed_courses=fixed,  # 기동 시 로드한 df 재사용(엑셀 재파싱 방지)
+                                  node_budget=NODE_BUDGET)
     chosen = rec["추천시간표"]
     충돌 = sum(1 for i in range(len(chosen)) for j in range(i + 1, len(chosen))
              if T.sections_conflict(chosen[i]["sec"], chosen[j]["sec"]))
@@ -546,7 +598,7 @@ def _solve_once(profile, 목표학점, 진단, fixed=None):
             g["필수"] = True
     선수경고 = [{"과목": k, "선수": v["선수"], "필수": v["필수"]} for k, v in 묶음.items()]
 
-    # 희망(특히 '꼭 넣기') 과목을 현재 설정과 어긋나게 넣었을 때 이유를 알려준다.
+    # 희망과목(하드 요청)을 현재 설정과 어긋나게 넣었을 때 이유를 알려준다.
     경고 = []
     사이버포함 = bool(profile.get("사이버강좌"))
     동선최적화 = bool(profile.get("동선최적화"))
@@ -554,10 +606,9 @@ def _solve_once(profile, 목표학점, 진단, fixed=None):
     for c in chosen:
         if c.get("트랙") != "희망":
             continue
-        이유 = "꼭 들어야 하는 과목이라" if c.get("필수희망") else "희망하셔서"
         if not 사이버포함 and c["sec"].get("사이버"):
             경고.append(f"'{c['교과목명']}'은(는) 사이버강좌예요. '사이버강좌 포함'을 켜지 않았지만 "
-                       f"{이유} 시간표에 넣었어요.")
+                       f"희망하신 과목이라 시간표에 넣었어요.")
     if 동선최적화:                                   # 동선 최적화 중인데 희망과목이 촉박한 건물이동에 걸림
         for w in rec.get("이동동선", []):
             if w.get("ok"):
@@ -570,6 +621,18 @@ def _solve_once(profile, 목표학점, 진단, fixed=None):
             경고.append(f"'{대상}'은(는) '{상대}'와 강의실 이동이 촉박해요"
                        f"(도보 {w.get('이동분')}분 / 여유 {w.get('여유분')}분). "
                        f"'건물 이동 최소화'를 켰지만 희망하셔서 넣었어요.")
+    # 희망과목(하드)을 못 넣었으면 조용히 빠지지 말고 이유를 안내한다.
+    chosen_names = {c["교과목명"] for c in chosen}
+    개설이름 = set(_DF["교과목명"].astype(str))
+    for w in profile.get("희망과목", []):
+        cand_names = {w} | set(_EQMAP.get(w, []))
+        if cand_names & chosen_names:
+            continue
+        if cand_names & 개설이름:
+            경고.append(f"'{w}'은(는) 기존 과목·다른 희망과목과 시간이 겹쳐 이번 시간표에 "
+                       f"넣지 못했어요. 안 들을 과목·차단시간이나 다른 희망을 조정해 보세요.")
+        else:
+            경고.append(f"'{w}'은(는) 이번 학기에 개설되지 않아 넣지 못했어요.")
 
     result = {
         "metrics": {
@@ -598,11 +661,45 @@ def _ban_candidate(chosen, protected):
     return pool[0]["교과목명"]
 
 
+def _struct_sig(timetable):
+    """시간표의 '구조 지문' — 대면 수업이 점유하는 (요일,시작,종료) 블록 집합.
+    온라인/사이버는 물리적 시간 점유가 아니라 제외한다. 지문이 같으면 '같은 구조'로 보고,
+    과목만 다른 쌍둥이 안은 별도 추천안 대신 교체대안으로 합친다."""
+    blocks = set()
+    for c in timetable:
+        if c.get("사이버") or c.get("이러닝"):
+            continue
+        for d, s, e in c.get("slots", []):
+            blocks.add((str(d), int(s), int(e)))
+    return frozenset(blocks)
+
+
+def _lunch_blocked(blocks):
+    """사용자가 차단시간으로 점심(12:00~13:00)을 이미 비워 뒀는지 — 해설이 '점심 챙기기 좋다'를
+    사용자 스스로 만든 공백에 대해 생색내지 않도록 판정."""
+    for b in blocks:
+        for _d, s, e in T.parse_times(b):
+            if s < 13 * 60 and 12 * 60 < e:
+                return True
+    return False
+
+
+def _swap_note(base_tt, alt_tt):
+    """구조가 같은 두 안의 과목 차이 → '이 자리엔 A 대신 B(같은 시간·같은 구분)' 사실 노트.
+    차이가 없으면 None."""
+    b = {c["교과목명"] for c in base_tt}
+    a = {c["교과목명"] for c in alt_tt}
+    뺀, 넣은 = sorted(b - a), sorted(a - b)
+    if not 뺀 and not 넣은:
+        return None
+    return {"뺀": 뺀, "넣은": 넣은}
+
+
 def _recommend_alts(p: TimetableProfile, n_alts=3):
-    """추천안 최대 n개 생성. 1안=최적해, 2·3안=직전 안에서 덜 중요한 과목 하나를
-    제외과목(하드 조건)으로 돌려 다른 과목으로 재구성한 대안(결정론적)."""
-    if _TIMETABLE_ERROR:
-        return {"error": f"시간표 데이터를 불러오지 못해 추천을 만들 수 없습니다: {_TIMETABLE_ERROR}"}
+    """추천안을 만든다. 1안=최적해. 2·3안은 직전 안에서 덜 중요한 과목 하나를 제외과목으로
+    돌려 재구성하되, **구조(대면 시간 배치)가 실제로 다른 안만** 별도 추천안으로 노출한다.
+    구조가 같고 과목만 바뀐 안은 '이 자리엔 X 대신 Y' 교체대안으로 합친다(쌍둥이 안 방지).
+    마지막에 (선택) Solar가 각 안을 1~2줄로 해설한다 — TT_EXPLAIN 으로 끌 수 있다."""
     profile = _to_profile(p)
     진단 = requirements.diagnose_any(profile, _EQMAP)
     if "질문" in 진단 or "오류" in 진단:
@@ -611,24 +708,42 @@ def _recommend_alts(p: TimetableProfile, n_alts=3):
     # pin: 고정한 과목을 chosen 구조로 복원 → 모든 추천안에 seed. 대안 생성 시 제외 대상에서도 보호.
     fixed = _rebuild_chosen(p.고정과목, p.선호) if p.고정과목 else []
     protected = set(p.희망과목) | {c["교과목명"] for c in fixed}
-    alts, banned, seen = [], [], set()
-    for i in range(n_alts):
+    alts, banned = [], []
+    sig_index = {}   # 구조 지문 → alts 인덱스 (같은 구조면 새 안 대신 교체대안으로 합침)
+    shown_bans = 0   # 마지막으로 보여준 안까지 반영된 banned 개수 → 안마다 '증분'만 표기
+    for i in range(n_alts + 2):   # 구조 dedup으로 안이 줄 수 있어 몇 번 더 시도
         prof_i = dict(profile)
         if banned:
             prof_i["제외과목"] = list(profile.get("제외과목", [])) + banned
         result, chosen = _solve_once(prof_i, p.목표학점, 진단, fixed=fixed)
-        key = frozenset((c["학수번호"], str(c["sec"]["분반"])) for c in chosen)
-        if key not in seen:
-            seen.add(key)
-            alts.append({"label": f"추천안 {len(alts) + 1}",
-                         "다른점": list(banned), **result})
         if not chosen:
             break
+        sig = _struct_sig(result["timetable"])
+        if sig in sig_index:                      # 구조 동일 → 과목만 다른 쌍둥이
+            base = alts[sig_index[sig]]
+            note = _swap_note(base["timetable"], result["timetable"])
+            if note and note not in base.setdefault("교체대안", []):
+                base["교체대안"].append(note)
+        else:
+            sig_index[sig] = len(alts)
+            alts.append({"label": f"추천안 {len(alts) + 1}",
+                         "다른점": banned[shown_bans:], **result})  # 직전 안 이후 새로 뺀 과목만
+            shown_bans = len(banned)
+            if len(alts) >= n_alts:               # 구조가 다른 안을 목표 개수만큼 확보
+                break
         ban = _ban_candidate(chosen, protected)
         if not ban:
             break
         banned.append(ban)
 
+    if TT_EXPLAIN:            # (선택) 각 안에 Solar 1~2줄 해설('summary' 키) 부착 — 끌 수 있음
+        timetable_explain.explain(
+            alts,
+            요청공강=set(profile.get("공강요일", [])),           # 사용자가 일부러 비운 요일
+            점심차단=_lunch_blocked(profile.get("차단시간", [])),  # 점심을 차단시간으로 이미 비웠나
+        )
+    if not alts:          # 후보 과목이 하나도 없으면(예: 해당 학년 개설 없음) 500 대신 안내
+        return {"error": f"{profile['학과']} {profile.get('학년')}학년에 넣을 수 있는 과목을 못 찾았어요."}
     resp = {k: v for k, v in alts[0].items() if k not in ("label", "다른점")}
     resp["진단"] = _diag_json(진단)
     resp["alts"] = alts

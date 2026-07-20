@@ -89,6 +89,7 @@ function ttSwitchResultTab(tab, btn) {
   }
 
   .brand img, .brand-badge { height: 32px; width: 32px; display: block; flex-shrink: 0; }
+  .hero-title-logo, .hero-badge { height: 34px; width: 34px; display: block; flex-shrink: 0; }
 
   nav { display: flex; gap: 30px; }
 
@@ -132,7 +133,7 @@ function ttSwitchResultTab(tab, btn) {
   .view .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
 
   /* ── 홈 뷰 ── */
-  .home-shell {
+  .home-shell {          /* 홈 전체를 감싸는 둥근 흰 카드 */
     background: #fff; border-radius: 28px;
     margin: 4px 0 28px; padding: 8px 40px 4px;
   }
@@ -141,14 +142,15 @@ function ttSwitchResultTab(tab, btn) {
     padding: 20px 0 16px; text-align: left;
   }
   .hero-left { flex: 1.05; min-width: 0; }
-  .hero-split .hero-title {
-    font-size: 50px; font-weight: 800; letter-spacing: -0.03em;
-    color: var(--crimson); margin: 0 0 14px;
-    display: flex; align-items: center; gap: 12px;
+  .hero-title {
+    font-size: 30px; font-weight: 800; letter-spacing: -0.03em;
+    color: var(--crimson); margin: 0 0 12px;
+    display: flex; align-items: center; gap: 10px;
   }
+  .hero-title-logo { height: 34px; width: 34px; display: block; }
   .hero-tagline {
-    font-size: 30px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.4;
-    color: var(--ink); margin: 0 0 14px;
+    font-size: 19px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.4;
+    color: var(--ink); margin: 0 0 12px;
   }
   .hero-desc {
     font-size: 14px; line-height: 1.65; color: #4a4742;
@@ -199,14 +201,14 @@ function ttSwitchResultTab(tab, btn) {
   }
 
   .feature-section { padding: 28px 0 8px; border-top: 1px solid var(--line); }
-  .feature-section-title { font-size: 25px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 18px; }
+  .feature-section-title { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 18px; }
   .feature-grid {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 0 0 8px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin: 0 0 8px;
   }
   .feature-card {
-    border: 1px solid var(--line); border-radius: 16px;
+    background: #fff; border: 1px solid var(--line); border-radius: 16px;
     padding: 20px 18px 44px; cursor: pointer; position: relative;
-    display: flex; align-items: flex-start; gap: 12px;
+    display: flex; align-items: flex-start; gap: 12px;   /* 아이콘 이미지 | 텍스트 가로 배치 */
     transition: box-shadow 0.15s, transform 0.15s;
   }
   .feature-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.06); transform: translateY(-2px); }
@@ -219,11 +221,8 @@ function ttSwitchResultTab(tab, btn) {
   .feature-card h3 { margin: 4px 0 6px; font-size: 14.5px; font-weight: 800; }
   .feature-card p { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.55; }
   .feature-arrow { position: absolute; right: 18px; bottom: 16px; color: var(--muted); font-size: 15px; }
-  @media (max-width: 900px) {
+  @media (max-width: 760px) {
     .feature-grid { grid-template-columns: 1fr 1fr; }
-  }
-  @media (max-width: 500px) {
-    .feature-grid { grid-template-columns: 1fr; }
   }
 
   .cta-btn {
@@ -784,6 +783,15 @@ function ttSwitchResultTab(tab, btn) {
                 color: var(--muted); font-family: inherit; }
   .tt-alt-tab.on { background: var(--crimson); border-color: var(--crimson); color: #fff; }
   .tt-alt-hint { margin: -2px 0 12px; }
+  /* 추천안 Solar 해설(서버 TT_EXPLAIN 켜면 summary가 옴) */
+  .tt-alt-summary { margin: 2px 0 14px; padding: 11px 14px; border-radius: 10px;
+                    background: var(--crimson-soft); border: 1px solid var(--line);
+                    color: var(--ink); font-size: 13.5px; line-height: 1.55; }
+  /* 같은 구조 교체대안(Plan B) — 수강신청 실패 대비 */
+  .tt-swap-note { margin: -6px 0 12px; padding: 8px 12px; border-radius: 8px;
+                  background: #fff; border: 1px dashed var(--line); color: var(--muted);
+                  font-size: 12.5px; line-height: 1.5; }
+  .tt-swap-note b { color: var(--ink); }
 
   /* 강의계획서 세부 (과목 목록 접이식 행) */
   .tt-detail-btn { padding: 4px 10px; border: 1px solid var(--line); background: #fff;
@@ -1045,6 +1053,11 @@ function ttSwitchResultTab(tab, btn) {
     display: inline-block; margin-top: 3px; background: rgba(255,255,255,0.85); color: var(--crimson-dark);
     font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 8px;
   }
+  /* 1시간짜리(40px) 카드엔 과목명·강의실·배지 3줄(약 51px)이 안 들어가 아래가 잘린다.
+     짧은 카드만 가로로 이어 붙여 넘치지 않게 한다. */
+  .tt-course-block.tt-short { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px; }
+  .tt-course-block.tt-short b { display: inline; margin-bottom: 0; }
+  .tt-course-block.tt-short .tt-block-elearn { margin-top: 0; }
 
   .tt-table-wrap { overflow-x: auto; margin-bottom: 4px; }
   .tt-course-table { width: 100%; border-collapse: collapse; font-size: 12.5px; background: #fff; }
@@ -1202,11 +1215,10 @@ function ttSwitchResultTab(tab, btn) {
   }
   #chat-toggle:hover { transform: scale(1.06); }
   #chat-toggle.is-hidden { opacity: 0; pointer-events: none; transform: scale(0.6); }
-  #chat-toggle.chat-fab-off { display: none !important; }
 
   /* ── 우측 상단 고정 달력 버튼 + 팝업 ── */
   #calendar-toggle {
-    position: fixed; top: 13px; right: 62px; width: 34px; height: 34px;
+    position: fixed; top: 13px; right: 24px; width: 34px; height: 34px;
     border-radius: 8px; background: none; border: none; color: var(--ink);
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; z-index: 1000; transition: color 0.15s, background 0.15s, opacity 0.2s ease, transform 0.2s ease;
@@ -1214,18 +1226,6 @@ function ttSwitchResultTab(tab, btn) {
   #calendar-toggle svg { width: 22px; height: 22px; }
   #calendar-toggle:hover { color: var(--crimson); background: var(--crimson-soft); }
   #calendar-toggle.is-hidden { opacity: 0; pointer-events: none; transform: scale(0.6); }
-
-  #chat-fab-switch {
-    position: fixed; top: 13px; right: 24px; width: 34px; height: 34px;
-    border-radius: 8px; background: none; border: none; color: var(--ink);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; z-index: 1000; transition: color 0.15s, background 0.15s, opacity 0.2s ease;
-  }
-  #chat-fab-switch svg { width: 20px; height: 20px; }
-  #chat-fab-switch:hover { color: var(--crimson); background: var(--crimson-soft); }
-  #chat-fab-switch.off { color: var(--muted); }
-  #chat-fab-switch.off svg { opacity: 0.45; }
-  #chat-fab-switch.is-hidden { opacity: 0; pointer-events: none; transform: scale(0.6); }
 
   #calendar-popup {
     position: fixed; top: 68px; right: 24px; width: 296px; max-width: 92vw;
@@ -1392,7 +1392,7 @@ function ttSwitchResultTab(tab, btn) {
   .tt-panel-body .tt-row { flex-wrap:wrap; }
   .tt-panel-body .tt-field-sm { flex:1 1 90px; }
   .tt-advanced.tt-panel-section { border-radius:0; padding:0; }
-  .tt-advanced.tt-panel-section .tt-card-flat { padding:0; }
+  .tt-advanced.tt-panel-section .tt-card-flat { padding:0 20px 18px; }   /* 좌우 여백을 tt-panel-body(제외과목·이수과목)와 동일하게 */
   .tt-submit-wrap { position:sticky; bottom:0; padding:14px 18px; background:rgba(255,255,255,.96); border-top:1px solid var(--line); z-index:2; }
   .tt-submit-wrap .tt-submit { border-radius:11px; padding:13px; }
   .tt-result-panel { border:1px solid var(--line); border-radius:18px; background:#fff; min-height:560px; overflow:hidden; }
@@ -1455,7 +1455,7 @@ function ttSwitchResultTab(tab, btn) {
     <div class="hero hero-split">
       <div class="hero-left">
         <div class="hero-badge-pill">내 학업 계획의 든든한 파트너 ✦</div>
-        <h1 class="hero-title">CourseMate</h1>
+        <h1 class="hero-title"><img src="/static/logo.png" alt="" class="hero-title-logo">CourseMate</h1>
         <p class="hero-tagline">학사정보 확인부터<br>나만의 수강 계획까지</p>
         <p class="hero-desc">
           수강편람을 기반으로 재수강, 졸업요건, 교과과정 정보를 안내하고,<br>
@@ -1543,6 +1543,8 @@ function ttSwitchResultTab(tab, btn) {
   </section>
 
   <section id="view-roadmap" class="view">
+    <h1>나의 교과과정</h1>
+
     <div class="selector-row">
       <select id="dept-select"><option>불러오는 중...</option></select>
       <select id="year-select"></select>
@@ -1563,6 +1565,7 @@ function ttSwitchResultTab(tab, btn) {
     </div>
   </section>
   <section id="view-chatbot" class="view">
+    <h1>수강편람 챗봇</h1>
     <div class="page-chat-wrap">
       <div id="page-chat-messages" class="page-chat-messages">
         <div class="msg bot">안녕하세요! 수강신청, 재수강, 졸업 기준 등 수강편람 관련 질문을 물어보세요.</div>
@@ -1575,6 +1578,8 @@ function ttSwitchResultTab(tab, btn) {
   </section>
 
   <section id="view-calendar" class="view">
+    <h1>학사일정</h1>
+
     <div id="dday-widget"><div class="dday-track" id="dday-track"></div></div>
 
     <div class="cal-toggle">
@@ -1617,6 +1622,7 @@ function ttSwitchResultTab(tab, btn) {
   </section>
 
   <section id="view-manual" class="view">
+    <h1>수강편람</h1>
     <iframe id="manual-pdf-frame" class="manual-pdf-frame"></iframe>
     <div id="manual-error" class="empty-state" style="display:none;"></div>
   </section>
@@ -1630,16 +1636,16 @@ function ttSwitchResultTab(tab, btn) {
           <div class="tt-panel-body">
           <div class="tt-basic-fields">
             <div class="tt-field">
-              <label>학과</label>
-              <select id="tt-dept"></select>
-            </div>
-            <div class="tt-field">
               <label>학번(입학년도)</label>
-              <select id="tt-yr">
+              <select id="tt-yr" onchange="ttFillDepts()">
                 <option value="2026" selected>2026</option>
                 <option value="2025">2025</option>
                 <option value="2024">2024</option>
               </select>
+            </div>
+            <div class="tt-field">
+              <label>학과</label>
+              <select id="tt-dept"></select>
             </div>
             <div class="tt-field">
               <label>학년</label>
@@ -1842,11 +1848,6 @@ function ttSwitchResultTab(tab, btn) {
     <line x1="3.5" y1="9.5" x2="20.5" y2="9.5"></line>
     <line x1="8" y1="3" x2="8" y2="7"></line>
     <line x1="16" y1="3" x2="16" y2="7"></line>
-  </svg>
-</button>
-<button id="chat-fab-switch" onclick="toggleChatFabVisibility()" title="챗봇 버튼 켜기/끄기">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
   </svg>
 </button>
 <aside id="calendar-popup">
@@ -2965,22 +2966,6 @@ function toggleChat() {
   document.getElementById('chat-toggle').classList.toggle('is-hidden');
 }
 
-// ── 상단 탭의 챗봇 버튼 켜기/끄기 (우측 하단 플로팅 버튼 표시 여부, localStorage에 저장) ──
-function applyChatFabVisibility() {
-  const off = localStorage.getItem('chatFabOff') === 'true';
-  document.getElementById('chat-toggle').classList.toggle('chat-fab-off', off);
-  document.getElementById('chat-fab-switch').classList.toggle('off', off);
-  document.getElementById('chat-fab-switch').title = off ? '챗봇 버튼 켜기' : '챗봇 버튼 끄기';
-}
-
-function toggleChatFabVisibility() {
-  const off = localStorage.getItem('chatFabOff') === 'true';
-  localStorage.setItem('chatFabOff', off ? 'false' : 'true');
-  applyChatFabVisibility();
-}
-
-applyChatFabVisibility();
-
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
@@ -3078,6 +3063,24 @@ let ttTaken = [];
 let ttAvoid = [];               // 안 들을 과목 (하드 조건 — 후보에서 통째 제외)
 let ttTakenDetail = {};         // 성적표 업로드로 얻은 {과목명: {과목,학점,성적}} — 졸업 진단 정확도용
 let ttAllNames = [];
+let ttDeptsByYear = {};      // 입학년도 → 그 해에 존재하던 학과 목록
+let ttDefaultDept = '';
+
+// 입학년도에 맞춰 학과 목록을 다시 채운다. 학과는 해마다 생기고 없어지므로
+// (2025 국방시스템공학과 → 2026 없음) 연도를 먼저 고르고 그 해 기준으로 거른다.
+// 고르고 있던 학과가 그 해에도 있으면 선택을 유지한다.
+function ttFillDepts() {
+  const sel = document.getElementById('tt-dept');
+  if (!sel) return;
+  const year = document.getElementById('tt-yr').value;
+  const list = ttDeptsByYear[year] || [];      // [{값, 이름}] — 값은 시간표 검색 키, 이름은 표시용
+  const vals = list.map(d => d.값);
+  const keep = sel.value && vals.includes(sel.value) ? sel.value
+             : (vals.includes(ttDefaultDept) ? ttDefaultDept : (vals[0] || ''));
+  sel.innerHTML = list.map(d =>
+    `<option value="${ttEsc(d.값)}" ${d.값 === keep ? 'selected' : ''}>${ttEsc(d.이름)}</option>`
+  ).join('');
+}
 
 function ttListOf(kind) { return kind === 'want' ? ttWant : kind === 'avoid' ? ttAvoid : ttTaken; }
 
@@ -3110,10 +3113,9 @@ async function loadTimetableMeta() {
   try {
     const res = await fetch(API + '/api/timetable/meta');
     const data = await res.json();
-    const sel = document.getElementById('tt-dept');
-    sel.innerHTML = data.학과들.map(d =>
-      `<option value="${ttEsc(d)}" ${d === data.기본학과 ? 'selected' : ''}>${ttEsc(d)}</option>`
-    ).join('');
+    ttDeptsByYear = data.학과들_연도별 || {};
+    ttDefaultDept = data.기본학과;
+    ttFillDepts();
     ttAllNames = data.과목명들 || [];
   } catch (err) {
     console.error('시간표 메타 로드 실패', err);
@@ -3481,8 +3483,11 @@ function ttRenderGrid(courses) {
   const startHour = Math.max(0, Math.min(9, Math.floor(minStart / 60)));
   const endHour = Math.min(24, Math.max(17, Math.ceil(maxEnd / 60)));
   const HOUR_PX = 40;
-  const totalHeight = (endHour - startHour) * HOUR_PX;
-  ttGridGeom = { startHour, endHour, HOUR_PX };   // 검색 미리보기 위치·확장 계산용
+  // 마지막 수업이 정각에 끝나면(예 18:00~19:00) 카드 하단이 그리드 경계와 정확히 겹쳐,
+  // wrap의 overflow:hidden+둥근 모서리에 잘려 보인다. 아래에 여유를 둬 카드가 온전히 보이게 한다.
+  const BOTTOM_PAD = 14;
+  const totalHeight = (endHour - startHour) * HOUR_PX + BOTTOM_PAD;
+  ttGridGeom = { startHour, endHour, HOUR_PX, BOTTOM_PAD };   // 검색 미리보기 위치·확장 계산용
 
   const hoursHtml = Array.from({ length: endHour - startHour }, (_, i) => startHour + i)
     .map(h => `<div class="tt-grid-hour" style="height:${HOUR_PX}px;">${h}:00</div>`).join('');
@@ -3496,11 +3501,12 @@ function ttRenderGrid(courses) {
         const color = colorMap[c.교과목명] || '#B4B2A9';
         const sub = [c.강의실, c.교수].filter(Boolean).map(ttEsc).join(' · ');
         const elearn = c.이러닝 ? `<span class="tt-block-elearn">💻 e-러닝</span>` : '';
-        // 편집 모드: 블록 우상단 ×로 삭제. 평소: 고정 과목이면 📌.
+        // 편집 모드: 블록 우상단 ×로 삭제. ([팀 피드백 숨김] 핀 고정 📌 표시 제거 — 기능(ttPinned)은 유지)
         const corner = ttEditMode
           ? `<span class="tt-block-del" onclick="ttBlockDel(event,'${ttEsc(c.학수번호)}','${ttEsc(c.분반)}')" title="이 과목 삭제">×</span>`
-          : (ttIsPinned(c.학수번호, c.분반) ? `<span class="tt-block-pin" title="고정된 과목">📌</span>` : '');
-        blocksHtml += `<div class="tt-course-block" style="top:${top}px;height:${height}px;background:${color};" title="${ttEsc(c.교과목명)} · ${ttEsc(c.교수)} · ${ttEsc(c.강의실)}">
+          : '';
+        const short = height < 52 ? ' tt-short' : '';   // 세로로 3줄이 안 들어가는 높이면 가로 배치
+        blocksHtml += `<div class="tt-course-block${short}" style="top:${top}px;height:${height}px;background:${color};" title="${ttEsc(c.교과목명)} · ${ttEsc(c.교수)} · ${ttEsc(c.강의실)}">
           ${corner}<b>${ttEsc(c.교과목명)}</b>
           <span class="tt-block-sub">${sub}</span>
           ${elearn}
@@ -3636,8 +3642,8 @@ function ttCourseCells(c, idx, gid) {
   const time = c.사이버 ? '사이버(시간 지정 없음)' : c.slots.map(([d, s, e]) =>
     `${d} ${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}~${String(Math.floor(e/60)).padStart(2,'0')}:${String(e%60).padStart(2,'0')}`
   ).join(', ');
-  const pinned = ttIsPinned(c.학수번호, c.분반);
   // 강의계획서 사이트 점검(~7/27) 임시 숨김: 계획서 세부 버튼 셀 제거
+  // [팀 피드백 숨김] 핀 고정(📌) 열 제거 — 기능(ttTogglePin·ttPinned)은 유지, UI만 숨김
   return `<td><span class="tt-copy-name" data-copy="${ttEsc(c.학수번호 || c.교과목명)}" data-label="${ttEsc(c.교과목명)}"
              onclick="ttCopyFromBtn(this)" title="클릭하면 학수번호 복사(수강신청용)">${ttEsc(c.교과목명)}</span> ${elearn}</td>
     <td>${c.학점}</td>
@@ -3645,10 +3651,7 @@ function ttCourseCells(c, idx, gid) {
     <td>${ttEsc(time)}</td>
     <td>${ttEsc(c.강의실)}</td>
     <td>${ttEsc(c.교수)}</td>
-    <td>${ttEsc(c.분반)}</td>
-    <td><button class="tt-pin-btn ${pinned ? 'on' : ''}" data-code="${ttEsc(c.학수번호 || '')}"
-        data-sec="${ttEsc(c.분반 || '')}" data-time="${ttEsc(c.시간 || '')}" data-name="${ttEsc(c.교과목명 || '')}"
-        onclick="ttTogglePin(this)" title="${pinned ? '고정 해제' : '이 분반으로 고정 — 다시 생성해도 유지돼요'}">📌</button></td>`;
+    <td>${ttEsc(c.분반)}</td>`;
 }
 
 // 신청 과목 목록 — 이수구분(전공필수/기초/선택·교양…)별로 묶어서 표시.
@@ -3681,7 +3684,7 @@ function ttRenderCourseTable(courses) {
   });
   return `<div class="tt-table-wrap"><table class="tt-course-table">
     <thead><tr>
-      <th>구분</th><th>과목명</th><th>학점</th><th>학년</th><th>시간</th><th>강의실</th><th>교수</th><th>분반</th><th>고정</th>
+      <th>구분</th><th>과목명</th><th>학점</th><th>학년</th><th>시간</th><th>강의실</th><th>교수</th><th>분반</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
@@ -3739,10 +3742,19 @@ function ttShowAlt(idx) {
       <div class="tt-result-title">추천 시간표</div>
       <div class="tt-result-row">
         ${tabs}
+        <button class="tt-edit-btn" onclick="ttEnterEditMode()">✏️ 직접 편집</button>
       </div>
     </div>`;
   if (ttAlts.length > 1 && alt.다른점 && alt.다른점.length) {
     html += `<div class="tt-hint tt-alt-hint">↺ ${ttEsc(alt.다른점.join(', '))} 없이 구성한 대안이에요.</div>`;
+  }
+  if (alt.summary) {   // 서버 TT_EXPLAIN 켜면 오는 추천안 해설(1~2줄)
+    html += `<div class="tt-alt-summary">💡 ${ttEsc(alt.summary)}</div>`;
+  }
+  if (alt.교체대안 && alt.교체대안.length) {   // 구조 같은 교체안 — 수강신청 실패 대비 Plan B
+    const notes = alt.교체대안.map(n =>
+      `${ttEsc((n.뺀 || []).join(', '))} 대신 ${ttEsc((n.넣은 || []).join(', '))}`).join(' · ');
+    html += `<div class="tt-swap-note">🔁 같은 시간·같은 구분이라 <b>${notes}</b>(으)로 바꿔 신청해도 돼요 (수강신청 실패 대비 Plan B).</div>`;
   }
   html += ttResultHtml(view);
   document.getElementById('tt-results').innerHTML = html;
@@ -3764,6 +3776,8 @@ function ttEnterEditMode() {
   ttEditMode = true;
   const formCol = document.querySelector('.tt-form-col');
   if (formCol) formCol.style.display = 'none';   // 편집 중엔 왼쪽 입력 사이드바 숨김(검색란이 그 자리)
+  const nav = document.getElementById('tt-result-nav');
+  if (nav) nav.style.display = 'none';           // 결과 탭(과목목록·동선·진단)은 편집 화면과 무관 — 끝내면 ttShowAlt가 복원
   ttRenderEditView();
 }
 
@@ -3895,7 +3909,7 @@ function ttBlockDel(e, code, sec) {
 function ttGridExtend(endNeeded) {
   const g = ttGridGeom;
   if (!g || endNeeded <= g.endHour) return;
-  const h = (endNeeded - g.startHour) * g.HOUR_PX;
+  const h = (endNeeded - g.startHour) * g.HOUR_PX + (g.BOTTOM_PAD || 0);
   document.querySelectorAll('#es-grid .tt-grid-body').forEach(b => b.style.height = h + 'px');
   const hours = document.querySelector('#es-grid .tt-grid-hours');
   if (hours) {
@@ -3913,7 +3927,7 @@ function ttGridExtend(endNeeded) {
 function ttGridExtendReset() {
   const g = ttGridGeom;
   if (!g) return;
-  const h = (g.endHour - g.startHour) * g.HOUR_PX;
+  const h = (g.endHour - g.startHour) * g.HOUR_PX + (g.BOTTOM_PAD || 0);
   document.querySelectorAll('#es-grid .tt-grid-body').forEach(b => b.style.height = h + 'px');
   document.querySelectorAll('#es-grid .tt-grid-hour-ext').forEach(el => el.remove());
 }

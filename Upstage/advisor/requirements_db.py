@@ -219,20 +219,63 @@ def build(parsed_path=PARSED, out=DB_OUT):
             _extract_balance(t, db[year])
             _extract_common(t, db[year])
             _extract_foundation(t, db[year])
+    _repair(db)
     json.dump(db, open(out, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    return db
+
+
+# 요약표가 다단(한 행에 여러 학과)이라 Document Parse가 펼칠 때 옆 칸 학과명이 붙거나
+# 숫자 꼬리가 남은 항목들. 이름만 바로잡는다(값은 원본 그대로).
+# 이름이 어긋나면 '이 연도에 이 학과가 있나'라는 관문이 통째로 어긋나서 학과가 사라진다.
+_NAME_FIXES = {
+    "2025": {
+        "AI로봇학과무용과": ["AI로봇학과", "무용과"],
+        "바이오융합공학전공국방시스템공학과": ["바이오융합공학전공", "국방시스템공학과"],
+        "식품생명공학전공양자원자력공학과": ["식품생명공학전공", "양자원자력공학과"],
+    },
+    "2026": {
+        "바이오산업자원공학전공양자원자력공학과": ["바이오산업자원공학전공", "양자원자력공학과"],
+        "수학통계학과지능형드론융합전공": ["수학통계학과", "지능형드론융합전공"],
+        "외식경영학전공9": ["외식경영학전공"],
+        "컴퓨터공학과12": ["컴퓨터공학과"],
+    },
+}
+
+
+def _repair(db):
+    """붙어버린 학과명을 원래 이름들로 되돌린다. 값은 그대로 복사(둘 다 같은 요약값)."""
+    for year, fixes in _NAME_FIXES.items():
+        요약 = db.get(year, {}).get("요약")
+        if not 요약:
+            continue
+        for broken, names in fixes.items():
+            if broken not in 요약:
+                continue
+            vals = 요약.pop(broken)
+            for n in names:
+                요약.setdefault(n, vals)
     return db
 
 
 def load():
     if os.path.exists(DB_OUT):
-        return json.load(open(DB_OUT, encoding="utf-8"))
+        return _repair(json.load(open(DB_OUT, encoding="utf-8")))
     return build()
 
 
 # 통합/개명된 학과의 과거 이름 — 통합 학과는 후보가 여러 개라 사용자에게 트랙 확인 필요
 ALIASES = {
     "인공지능데이터사이언스학과": ["인공지능학과", "데이터사이언스학과", "인공지능학", "데이터사이언스학"],
+    "경제학과": ["경제통상학과"],          # 2019년 요건표엔 옛 이름(경제통상학과)으로 실려 있다
 }
+
+
+def _core(name):
+    """'법학과'와 '법학전공'을 같은 뿌리로 만든다 — 접미어를 떼고 남는 '학'까지 뗀다.
+
+    한국어 학과명은 '법학과'='법'+'학과'처럼 잘려서 접미어만 떼면 뿌리가 어긋난다.
+    """
+    return re.sub(r"학$", "", re.sub(r"(학과|학부|전공|과|부)$", "", name))
 
 
 def resolve_dept(dept, year_db):
@@ -245,11 +288,16 @@ def resolve_dept(dept, year_db):
     alias_hits = [a for a in ALIASES.get(d, []) if a in names]
     if alias_hits:
         return alias_hits
-    hits = sorted(n for n in names if n in d or d in n)
+    # 학부 접두어만 떼는 방향(요건표 '국제통상전공' ← 시간표 '글로벌인재학부 국제통상전공')만 허용.
+    # 반대 방향(질의가 요건표 이름 안에 들어있는 경우)은 없어진 학과를 후신에 붙였다
+    # — 데이터사이언스학과→인공지능데이터사이언스학과, 소프트웨어학과→콘텐츠소프트웨어학과.
+    hits = sorted(n for n in names if n in d)
     if hits:
         return hits
-    core = d.replace("학과", "").replace("전공", "")
-    return sorted(n for n in names if core and core in n)
+    # 접미어만 다른 같은 학과(법학과↔법학전공)를 잇는 마지막 수단.
+    # 예전엔 뿌리의 '부분일치'라 없어진 학과를 후신에 붙였다(화학과→한국언어문화전공,
+    # 인공지능학과→인공지능데이터사이언스학과). 뿌리가 '완전히 같을 때'만 잇는다.
+    return sorted(n for n in names if _core(n) == _core(d))
 
 
 if __name__ == "__main__":

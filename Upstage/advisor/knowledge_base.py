@@ -3,8 +3,9 @@
 지식 베이스 빌더 — 흩어진 자료를 하나로 합쳐 Solar가 참고할 JSON을 만든다.
 
 합치는 소스:
-  1. 강의시간표 xlsx(2026-1)      → 학과 커리큘럼(학년×이수구분), 개설강좌 요약
-  2. 작년 강의시간표(2025-2)      → 과목명 변경 자동 감지
+  1. 강의시간표 xlsx(최신 학기)    → 학과 커리큘럼(학년×이수구분), 개설강좌 요약
+  2. 직전 학기 강의시간표          → 과목명 변경 자동 감지
+     (CUR_XLSX/OLD_XLSX는 SCHED_DIR 폴더에서 학기 최신순으로 자동 선택 — 아래 _resolve_semester_files)
   3. 수강편람 교양 변경표          → poc_cache/course_renames.json
   4. 수강편람 졸업요건(입학년도별)  → 아래 GRAD_REQ (수기 정리, 출처 표기)
   5. 강의계획서 선수과목           → (sjpt 사이트 점검중, 나중에 채움)
@@ -47,8 +48,48 @@ def _sanitize_renames(rmap):
 DIR = os.path.dirname(os.path.abspath(__file__))   # 이 파일(advisor/) 위치
 ROOT = os.path.dirname(DIR)                          # 프로젝트 루트
 SCHED_DIR = os.path.join(ROOT, "data", "강의시간표")   # 연도별 강의시간표 xlsx 모음 (2019~2026)
-CUR_XLSX = os.path.join(SCHED_DIR, "2026-1학기 강의시간표(한국어)_20260212.xlsx")
-OLD_XLSX = os.path.join(SCHED_DIR, "2025-2 강의시간표 (한국어)_20250831.xlsx")
+
+
+def _parse_year_sem(fname):
+    """강의시간표 파일명 → (연도, 학기). 학기 숫자가 없으면 날짜 접미사(_YYMMDD/_YYYYMMDD)의
+    월로 추론(3~6월=1학기, 그 외=2학기), 그것도 없으면 1학기로 본다. 형식 불명이면 None."""
+    m = re.match(r"^(\d{4})-(\d)?", fname)
+    if not m:
+        return None
+    year = int(m.group(1))
+    if m.group(2):
+        return (year, int(m.group(2)))
+    d = re.search(r"_(\d{8}|\d{6})", fname)          # 학기 숫자 없음 → 날짜로 학기 추론(8자리 우선)
+    if d:
+        digits = d.group(1)
+        month = int(digits[4:6]) if len(digits) == 8 else int(digits[2:4])
+        return (year, 1 if 3 <= month <= 6 else 2)
+    return (year, 1)
+
+
+def _resolve_semester_files(sched_dir):
+    """폴더 안 강의시간표 xlsx들을 (연도, 학기) 최신순으로 정렬해 가장 최근 학기를 이번 학기(CUR),
+    그다음을 직전 학기(OLD)로 돌려준다. 관리자가 새 학기 파일을 폴더에 넣기만 하면 코드 수정 없이
+    자동으로 최신 학기를 기준으로 삼는다. (같은 학기면 한국어판을 우선.)"""
+    cands = []
+    for f in os.listdir(sched_dir):
+        if f.startswith(("~$", ".")) or not f.lower().endswith((".xlsx", ".xls")):
+            continue
+        if "강의시간표" not in f:
+            continue
+        ys = _parse_year_sem(f)
+        if ys:
+            cands.append((ys[0], ys[1], "한국어" in f, os.path.join(sched_dir, f)))
+    if not cands:
+        raise FileNotFoundError(f"강의시간표 xlsx를 찾지 못했어요: {sched_dir}")
+    cands.sort(key=lambda x: (x[0], x[1], x[2]), reverse=True)   # 최신 학기 먼저, 동학기면 한국어 우선
+    cur = cands[0][3]
+    old = cands[1][3] if len(cands) > 1 else cur                 # 직전 학기 파일 없으면 동일 파일
+    return cur, old
+
+
+# 폴더에서 가장 최근 학기를 자동 선택 (하드코딩된 파일명 대신) — 새 학기 파일만 넣으면 자동 반영
+CUR_XLSX, OLD_XLSX = _resolve_semester_files(SCHED_DIR)
 RENAME_JSON = os.path.join(ROOT, "cache", "poc_cache", "course_renames.json")
 
 # 수강편람 "입학년도별 교과과정"에서 정리 (출처: 2026-1 수강편람 p.34/p.51)

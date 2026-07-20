@@ -1,6 +1,5 @@
 import io
 import json
-import os
 from pathlib import Path
 
 import requests
@@ -18,9 +17,6 @@ API_URL = "https://api.upstage.ai/v1/document-digitization"
 
 
 def load_api_key() -> str:
-    env_key = os.getenv("UPSTAGE_API_KEY")
-    if env_key:
-        return env_key
     secrets = json.loads(SECRETS_PATH.read_text(encoding="utf-8"))
     return secrets["UPSTAGE_API_KEY"]
 

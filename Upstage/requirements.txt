@@ -1,12 +1,22 @@
+# 세종대 수강편람 웹 서비스 (FastAPI) — Render 배포용
+# 프로젝트가 실제로 import 하는 라이브러리만 넣음. 버전은 코드와 호환되는 안전한 하한.
+
+# 웹 서버
 fastapi>=0.110
-uvicorn[standard]>=0.27
-pydantic>=2.5
-openai>=1.30
-chromadb>=0.4.24
-pymupdf>=1.23
-pandas>=2.0
-numpy>=1.24
-openpyxl>=3.1
+uvicorn>=0.29
+pydantic>=2.6
+python-multipart>=0.0.9   # 성적표 업로드(UploadFile/File)에 필요
+
+# Upstage API 호출 (챗봇·과목설명·에이전트)
+openai>=1.40
 requests>=2.31
-python-multipart>=0.0.9
-pypdf>=4.0
+
+# 챗봇 벡터 검색
+chromadb>=0.5
+
+# 수강편람 PDF 렌더링 (import fitz)
+pymupdf>=1.24
+
+# 교과과정·시간표 엑셀 처리
+pandas>=2.2
+openpyxl>=3.1              # pandas가 .xlsx를 읽을 때 쓰는 엔진
