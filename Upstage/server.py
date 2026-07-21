@@ -261,9 +261,6 @@ def _all_course_names():
     return sorted(n for n in names if n and n != "nan")
 
 
-_NAMES = _all_course_names()
-
-
 TT_YEARS = [2026, 2025, 2024]     # 드롭다운에 올릴 입학년도(학번)
 
 
@@ -312,8 +309,38 @@ def _display_name(dept, year):
     return dept if dept.replace(" ", "").endswith(hit.replace(" ", "")) else hit
 
 
-_DEPTS_BY_YEAR = {y: [{"값": d, "이름": _display_name(d, y)} for d in _supported_depts(y)]
-                  for y in TT_YEARS}
+# 드롭다운 목록(과목명·연도별 학과)은 매번 계산하면 26초 걸린다 — 과거 강의시간표 엑셀
+# 14개를 읽고(13.7초) 학과마다 교과과정을 조회하기(7.8초) 때문. 원본 파일이 바뀌지 않는 한
+# 결과가 항상 같으므로 JSON으로 저장해 두고 읽는다(26초 → 2초).
+# 데이터 파일을 갱신했으면 이 파일을 지우고 한 번 실행하면 다시 만들어진다.
+_META_CACHE = os.path.join(_ROOT, "cache", "dropdown_meta.json")
+
+
+def _load_meta():
+    """캐시가 있으면 읽고, 없으면 계산한 뒤 저장을 시도한다.
+    저장 실패(읽기전용 파일시스템 등)는 무시 — 계산 결과는 이미 메모리에 있어 동작에 지장 없다."""
+    import json
+    if os.path.exists(_META_CACHE):
+        try:
+            with open(_META_CACHE, encoding="utf-8") as f:
+                m = json.load(f)
+            return m["과목명들"], {int(y): v for y, v in m["학과들_연도별"].items()}
+        except Exception:
+            pass                                  # 캐시가 깨졌으면 그냥 다시 계산
+
+    names = _all_course_names()
+    depts = {y: [{"값": d, "이름": _display_name(d, y)} for d in _supported_depts(y)]
+             for y in TT_YEARS}
+    try:
+        os.makedirs(os.path.dirname(_META_CACHE), exist_ok=True)
+        with open(_META_CACHE, "w", encoding="utf-8") as f:
+            json.dump({"과목명들": names, "학과들_연도별": depts}, f, ensure_ascii=False)
+    except Exception:
+        pass
+    return names, depts
+
+
+_NAMES, _DEPTS_BY_YEAR = _load_meta()
 
 
 def _tt_suggest_taken(dept, grade):

@@ -665,7 +665,7 @@ def solve(courses, target_credits=18, prefer="오전", max_courses=8, group_limi
                     사용자가 정한 우선순위(1순위=4배, 2순위=2배, 3순위=1배, 동순위 허용)로
                     벌점을 곱해, 조건끼리 충돌할 때 상위 순위가 우선 반영되게 한다. 없으면 전부 1.
     """
-    best = {"score": (-1, -1, -1, 1), "chosen": []}   # score=(필수희망수, 선호희망수, 가중학점, -벌점)  클수록 좋음
+    best = {"score": (-1, -1, 1), "chosen": []}   # score=(희망과목수, 가중학점, -벌점)  클수록 좋음
     group_limits = group_limits or {}
     prefs = prefs or {}
     fixed = fixed or []                            # pin: 항상 포함할 고정 과목(미리 배치)
@@ -681,12 +681,10 @@ def solve(courses, target_credits=18, prefer="오전", max_courses=8, group_limi
         return sum(1 for c in chosen if c["이수구분"] == key)
 
     def weighted(chosen):
-        # 점수 비교 순서: (1) '꼭' 희망 수  (2) '되도록' 희망 수  (3) 우선순위 가중 학점  (4) 선호 벌점.
-        # 희망과목을 최우선으로 둬서, 넣을 수만 있으면(충돌만 없으면) 학점 트레이드오프에
-        # 밀려 조용히 빠지지 않게 한다. '꼭'으로 표시한 희망은 '되도록' 희망보다 먼저 지킨다
-        # (둘이 충돌하면 '꼭'을 남긴다).
+        # 점수 비교 순서: (1) 희망과목 수  (2) 우선순위 가중 학점  (3) 선호 벌점.
+        # 희망과목은 등급을 나누지 않고 전부 최우선(하드)으로 본다. 넣을 수만 있으면
+        # (충돌만 없으면) 학점 트레이드오프에 밀려 조용히 빠지지 않게 한다.
         must_hope = sum(1 for c in chosen if c.get("필수희망"))
-        soft_hope = sum(1 for c in chosen if c.get("트랙") == "희망" and not c.get("필수희망"))
         wc = sum((10 - c["priority"]) * c["credits"] for c in chosen)  # 필수일수록 가중↑
         pen = w_time * sum(c["pen"] for c in chosen)
         if prefs.get("연강선호") or prefs.get("우주공강방지"):
@@ -697,7 +695,7 @@ def solve(courses, target_credits=18, prefer="오전", max_courses=8, group_limi
                 pen += w_gap * (total_gap // 30)
         if prefs.get("동선최적화"):
             pen += w_walk * round(total_walk_minutes(chosen))    # 건물 이동 도보시간(분)만큼 벌점
-        return (must_hope, soft_hope, round(wc, 1), -pen)
+        return (must_hope, round(wc, 1), -pen)
 
     nodes = [0]   # 탐색 노드 수 — node_budget 초과 시 지금까지의 best로 조기 종료(폭발 방지)
 
