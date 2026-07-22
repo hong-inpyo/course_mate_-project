@@ -237,6 +237,9 @@ from advisor import timetable_explain   # 추천안 해설(선택) — TT_EXPLAI
 from advisor.knowledge_base import CUR_XLSX, OLD_XLSX, RENAME_JSON
 
 TT_EXPLAIN = False   # 추천안 Solar 해설 사용 여부. False면 해설만 빠지고 나머지는 그대로 동작.
+# 복수전공·부전공 기능 노출 여부. False면 화면에 입력란이 안 뜨고, 요청으로 값이 와도 무시한다
+# (시연 영상은 이 기능 없는 버전으로 찍어서, 필요할 때만 켤 수 있게 분리해 둔다).
+DUAL_MAJOR = False
 # 솔버 탐색 노드 상한. 후보 과목끼리 시간이 잘 안 겹치면 조합이 폭발해 응답이 9초까지 늘어난다.
 # 탐색을 끊어도 best는 노드마다 갱신되므로 유효한 시간표가 남는다(검증: 8학과×2학년 전부 18학점 동일, 9초→2초).
 NODE_BUDGET = 20000
@@ -355,6 +358,7 @@ class TimetableProfile(BaseModel):
     학과: str
     학번: int
     학년: int
+    복수전공: str = ""                # 복수전공·부전공·융합전공 — 그 전공 과목을 후보에 추가
     트랙: str = ""
     선호: str = "오전"
     목표학점: int = 18
@@ -391,6 +395,8 @@ def _to_profile(p: TimetableProfile) -> dict:
     }
     # 졸업학점 진단용 총이수학점 (이수과목은 미이수 제외된 상태 → 그대로 합산)
     prof["총이수학점"] = sum(float(c.get("학점", 0) or 0) for c in prof["이수과목"])
+    if DUAL_MAJOR and p.복수전공.strip() and p.복수전공.strip() != p.학과:
+        prof["복수전공"] = p.복수전공.strip()
     if p.트랙.strip():
         prof["트랙"] = p.트랙.strip()
     if p.전공개수:
@@ -475,6 +481,7 @@ def _diag_json(d: dict) -> dict:
 def tt_meta():
     return {"학과들_연도별": {str(y): d for y, d in _DEPTS_BY_YEAR.items()},
             "학번들": TT_YEARS, "과목명들": _NAMES,
+            "복수전공사용": DUAL_MAJOR,        # False면 화면에서 입력란을 숨긴다
             "기본학과": "인공지능데이터사이언스학과"}
 
 
@@ -741,7 +748,9 @@ def _recommend_alts(p: TimetableProfile, n_alts=3):
     for i in range(n_alts + 2):   # 구조 dedup으로 안이 줄 수 있어 몇 번 더 시도
         prof_i = dict(profile)
         if banned:
-            prof_i["제외과목"] = list(profile.get("제외과목", [])) + banned
+            # 사용자가 지정한 제외과목과 섞지 않는다 — 섞으면 시스템이 뺀 과목까지
+            # '사용자가 제외한 과목'으로 표시돼 왜 빠졌는지 오해하게 된다.
+            prof_i["대안제외과목"] = list(banned)
         result, chosen = _solve_once(prof_i, p.목표학점, 진단, fixed=fixed)
         if not chosen:
             break
@@ -773,6 +782,11 @@ def _recommend_alts(p: TimetableProfile, n_alts=3):
         return {"error": f"{profile['학과']} {profile.get('학년')}학년에 넣을 수 있는 과목을 못 찾았어요."}
     resp = {k: v for k, v in alts[0].items() if k not in ("label", "다른점")}
     resp["진단"] = _diag_json(진단)
+    if profile.get("복수전공"):      # 복수전공 이수 현황(전필 15 + 전선 24 = 39학점)
+        dual = requirements.diagnose_dual(profile["복수전공"], profile["학번"],
+                                          profile, _EQMAP)
+        if dual:
+            resp["복수전공진단"] = dual
     resp["alts"] = alts
     resp["이수확장"] = _taken_expanded(profile)
     return resp

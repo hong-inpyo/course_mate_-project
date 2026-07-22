@@ -956,6 +956,10 @@ function ttSwitchResultTab(tab, btn) {
   }
   .tt-gubun-sum { display: block; font-size: 10px; font-weight: 600; color: var(--muted); margin-top: 2px; }
   .tt-grp-start > td { border-top: 2px solid var(--line); }
+  /* 해당 학년 개설만으론 학점이 모자라 다른 학년 전공선택까지 넓혀 담은 과목 표시 */
+  .tt-off-year { display: inline-block; margin-left: 4px; font-size: 10px; font-weight: 700;
+                 padding: 1px 5px; border-radius: 8px; background: #FDF0E3; color: #B4761F;
+                 cursor: help; }
   .tt-move-tag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: #E4F1EA; color: #3F9165; }
   .tt-move-tag.bad { background: var(--crimson); color: #fff; }
 
@@ -1645,7 +1649,11 @@ function ttSwitchResultTab(tab, btn) {
             </div>
             <div class="tt-field">
               <label>학과</label>
-              <select id="tt-dept"></select>
+              <select id="tt-dept" onchange="ttFillDepts(true)"></select>
+            </div>
+            <div class="tt-field" id="tt-dept2-field" style="display:none">
+              <label>복수전공·부전공 <span class="tt-hint">(선택)</span></label>
+              <select id="tt-dept2"></select>
             </div>
             <div class="tt-field">
               <label>학년</label>
@@ -3063,22 +3071,34 @@ let ttTaken = [];
 let ttAvoid = [];               // 안 들을 과목 (하드 조건 — 후보에서 통째 제외)
 let ttTakenDetail = {};         // 성적표 업로드로 얻은 {과목명: {과목,학점,성적}} — 졸업 진단 정확도용
 let ttAllNames = [];
+let ttDualMajor = false;     // 서버가 복수전공 기능을 켰는지(meta.복수전공사용)
 let ttDeptsByYear = {};      // 입학년도 → 그 해에 존재하던 학과 목록
 let ttDefaultDept = '';
 
 // 입학년도에 맞춰 학과 목록을 다시 채운다. 학과는 해마다 생기고 없어지므로
 // (2025 국방시스템공학과 → 2026 없음) 연도를 먼저 고르고 그 해 기준으로 거른다.
 // 고르고 있던 학과가 그 해에도 있으면 선택을 유지한다.
-function ttFillDepts() {
+// deptOnly=true면 주전공 목록은 그대로 두고 복수전공 목록만 다시 채운다(주전공 변경 시).
+function ttFillDepts(deptOnly) {
   const sel = document.getElementById('tt-dept');
   if (!sel) return;
   const year = document.getElementById('tt-yr').value;
   const list = ttDeptsByYear[year] || [];      // [{값, 이름}] — 값은 시간표 검색 키, 이름은 표시용
   const vals = list.map(d => d.값);
-  const keep = sel.value && vals.includes(sel.value) ? sel.value
-             : (vals.includes(ttDefaultDept) ? ttDefaultDept : (vals[0] || ''));
-  sel.innerHTML = list.map(d =>
-    `<option value="${ttEsc(d.값)}" ${d.값 === keep ? 'selected' : ''}>${ttEsc(d.이름)}</option>`
+  if (!deptOnly) {
+    const keep = sel.value && vals.includes(sel.value) ? sel.value
+               : (vals.includes(ttDefaultDept) ? ttDefaultDept : (vals[0] || ''));
+    sel.innerHTML = list.map(d =>
+      `<option value="${ttEsc(d.값)}" ${d.값 === keep ? 'selected' : ''}>${ttEsc(d.이름)}</option>`
+    ).join('');
+  }
+  // 복수전공: 같은 해 학과 목록에서 주전공만 빼고 고르게 한다(기본은 '없음').
+  const sel2 = document.getElementById('tt-dept2');
+  if (!sel2) return;
+  const keep2 = sel2.value;
+  sel2.innerHTML = ['<option value="">없음</option>'].concat(
+    list.filter(d => d.값 !== sel.value).map(d =>
+      `<option value="${ttEsc(d.값)}" ${d.값 === keep2 ? 'selected' : ''}>${ttEsc(d.이름)}</option>`)
   ).join('');
 }
 
@@ -3115,6 +3135,10 @@ async function loadTimetableMeta() {
     const data = await res.json();
     ttDeptsByYear = data.학과들_연도별 || {};
     ttDefaultDept = data.기본학과;
+    // 서버에서 복수전공 기능이 꺼져 있으면 입력란 자체를 감춘다(server.py DUAL_MAJOR).
+    ttDualMajor = !!data.복수전공사용;
+    const f2 = document.getElementById('tt-dept2-field');
+    if (f2) f2.style.display = ttDualMajor ? '' : 'none';
     ttFillDepts();
     ttAllNames = data.과목명들 || [];
   } catch (err) {
@@ -3384,6 +3408,7 @@ function ttCollectBody() {
   // 현재 폼 상태 → 서버 프로필. 시간표 생성·자연어 조정이 함께 사용한다.
   return {
     학과: document.getElementById('tt-dept').value,
+    복수전공: (document.getElementById('tt-dept2') || {}).value || '',
     학번: parseInt(document.getElementById('tt-yr').value, 10),
     학년: parseInt(document.getElementById('tt-grade').value, 10),
     선호: document.getElementById('tt-prefer').value,
@@ -3546,6 +3571,30 @@ function ttAddWantFrom(btn) {
   ttToast(`'${name}' 희망과목에 추가됐습니다!`);
 }
 
+// 복수전공 이수 현황 — 수강편람 기준 전공필수 15 + 전공선택 24 = 39학점.
+// 주전공 진단과 달리 교양은 없다(교양 요건은 주전공에서 온다).
+function ttRenderDualDiagnosis(d) {
+  if (!d) return '';
+  const card = (title, v, pool) => `
+    <div class="tt-diag-card">
+      <h4>${ttEsc(title)}</h4>
+      <p>${v.이수학점} / ${v.필요학점}학점 · 남은 <span class="${v.남은학점 ? 'no' : 'ok'}">${v.남은학점}학점</span></p>
+      ${(v.남은학점 > 0 && v.미이수.length)
+        ? `<p class="tt-hint">${pool ? '이 중에서 채우기' : '아직 안 들은 과목'}</p>${ttMissChips(v.미이수.slice(0, 10))}`
+        : ''}
+    </div>`;
+  return `<div class="tt-section-title">복수전공 진단 — ${ttEsc(d.학과)}</div>
+    <div class="tt-diag-grid">
+      ${card('전공필수', d.전공필수, false)}
+      ${card('전공선택', d.전공선택, true)}
+      <div class="tt-diag-card">
+        <h4>합계</h4>
+        <p>${d.합계.이수학점} / ${d.합계.필요학점}학점 · 남은 <span class="${d.합계.남은학점 ? 'no' : 'ok'}">${d.합계.남은학점}학점</span></p>
+        <p class="tt-hint">${ttEsc(d.졸업작품 || '')}</p>
+      </div>
+    </div>`;
+}
+
 function ttRenderDiagnosis(d) {
   if (!d || d.오류) return '';
   const cf = d.공통필수, b = d.균형교양, a = d.학문기초, g = d.졸업학점, cert = d.졸업인증;
@@ -3641,7 +3690,9 @@ function ttCourseCells(c, idx, gid) {
   return `<td><span class="tt-copy-name" data-copy="${ttEsc(c.학수번호 || c.교과목명)}" data-label="${ttEsc(c.교과목명)}"
              onclick="ttCopyFromBtn(this)" title="클릭하면 학수번호 복사(수강신청용)">${ttEsc(c.교과목명)}</span> ${elearn}</td>
     <td>${c.학점}</td>
-    <td>${ttEsc(c.학년)}</td>
+    <td>${ttEsc(c.학년)}${c.트랙 === '타학년'
+        ? `<span class="tt-off-year" title="이 학년에 열린 과목만으로는 목표학점을 못 채워, 다른 학년 전공선택까지 넓혀 담았어요. 수강신청 전에 학년 제한을 확인하세요.">타학년</span>`
+        : ''}</td>
     <td>${ttEsc(time)}</td>
     <td>${ttEsc(c.강의실)}</td>
     <td>${ttEsc(c.교수)}</td>
@@ -3746,15 +3797,26 @@ function ttShowAlt(idx) {
     html += `<div class="tt-alt-summary">💡 ${ttEsc(alt.summary)}</div>`;
   }
   if (alt.교체대안 && alt.교체대안.length) {   // 구조 같은 교체안 — 수강신청 실패 대비 Plan B
-    const notes = alt.교체대안.map(n =>
-      `${ttEsc((n.뺀 || []).join(', '))} 대신 ${ttEsc((n.넣은 || []).join(', '))}`).join(' · ');
+    // 뺀 과목이 같으면 대안을 한데 묶는다 — 안 그러면 'A 대신 B · A 대신 C · A 대신 D'로 반복된다.
+    const byOut = new Map();
+    alt.교체대안.forEach(n => {
+      const k = (n.뺀 || []).join(', ');
+      if (!byOut.has(k)) byOut.set(k, []);
+      (n.넣은 || []).forEach(v => { if (!byOut.get(k).includes(v)) byOut.get(k).push(v); });
+    });
+    const notes = [...byOut.entries()]
+      .map(([out, ins]) => `${ttEsc(out)} 대신 ${ins.map(ttEsc).join(' · ')}`).join(', ');
     html += `<div class="tt-swap-note">🔁 같은 시간·같은 구분이라 <b>${notes}</b>(으)로 바꿔 신청해도 돼요 (수강신청 실패 대비 Plan B).</div>`;
   }
+  // 추천안을 바꿀 때는 보던 탭을 유지한다(과목 목록을 비교하다 시간표로 튕기지 않게).
+  // 패널은 새로 그려지므로 이전 탭을 기억했다가 다시 적용한다. 없으면 시간표.
+  const cur = document.querySelector('.tt-result-nav button.on');
+  const keep = (cur && cur.dataset.tab) || 'schedule';
   html += ttResultHtml(view);
   document.getElementById('tt-results').innerHTML = html;
   document.getElementById('tt-results').style.display = '';
   const nav = document.getElementById('tt-result-nav'); if (nav) nav.style.display = 'flex';
-  ttSwitchResultTab('schedule');
+  ttSwitchResultTab(keep);
 }
 
 // ── 직접 편집(독립 모드) ─────────────────────────────────────────
@@ -4122,11 +4184,12 @@ function ttResultHtml(data) {
     ? `<div class="tt-section-title">건물 이동 동선</div>${ttRenderMoveTable(data.이동동선)}`
     : `<div class="empty-state">표시할 건물 이동 동선이 없습니다.</div>`;
   let diagnosis = `<div class="tt-section-title">졸업요건 진단</div>${ttRenderDiagnosis(data.진단)}`;
+  if (data.복수전공진단) diagnosis += ttRenderDualDiagnosis(data.복수전공진단);
 
   if (data.이수제외text || (data.조건제외 && data.조건제외.length)) {
     courses += `<div class="tt-section-title">참고 사항</div>`;
     if (data.이수제외text) courses += `<div class="tt-note-box">📋 이수로 인식해 시간표에서 제외한 과목<br>${ttEsc(data.이수제외text)}</div>`;
-    if (data.조건제외 && data.조건제외.length) courses += `<div class="tt-note-box">⚠️ 입력 조건 때문에 후보에서 빠진 과목<br>` + data.조건제외.map(c => `· ${ttEsc(c.교과목명)} (${ttEsc(c.사유)})`).join('<br>') + `</div>`;
+    if (data.조건제외 && data.조건제외.length) courses += `<div class="tt-note-box">⚠️ 입력 조건으로 인해 빠진 과목<br>` + data.조건제외.map(c => `· ${ttEsc(c.교과목명)} (${ttEsc(c.사유)})`).join('<br>') + `</div>`;
   }
 
   return `<section class="tt-tab-panel on" data-panel="schedule">${schedule}</section>
