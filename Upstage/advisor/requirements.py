@@ -343,6 +343,53 @@ def diagnose_curriculum(profile, eqmap=None):
     return out
 
 
+# 수강편람 '전공·복수전공·부전공 이수 안내' — 복수전공은 전공필수 15학점 + 전공선택 24학점.
+# (전공기초는 복수전공 이수학점에 넣지 않는다 — 규정이 전필·전선만 명시한다)
+DUAL_REQUIRED = {"전공필수": 15, "전공선택": 24}
+
+
+def diagnose_dual(dept, year, profile, eqmap=None):
+    """복수전공(부전공·융합전공) 이수 현황. 교과과정표가 없으면 None.
+
+    주전공 진단과 달리 교양은 보지 않는다 — 교양 요건은 주전공에서 오기 때문이다.
+    졸업작품(예체능·창의소프트 복수전공 시 필수)은 학과별 규정이라 여기서 판정하지 않고
+    '확인 필요'로만 알린다.
+    """
+    try:                                  # 실행 경로에 따라 import 형태가 달라진다
+        import curriculum as C
+    except ImportError:
+        from advisor import curriculum as C
+    cur = C.load(dept, int(year))
+    if not cur:
+        return None
+    eqmap = eqmap if eqmap is not None else equiv_courses.load()
+    taken = _taken_names(profile)
+    학점 = cur.get("학점", {})
+
+    out = {"학과": cur["학과"], "연도": cur["연도"]}
+    총이수 = 0.0
+    for 구분, 필요 in DUAL_REQUIRED.items():
+        pool = cur["전공필수"] if 구분 == "전공필수" else cur["전공선택_pool"]
+        이수, 미이수 = [], []
+        학점합 = 0.0
+        for name in pool:
+            hit = _covered(name, taken, eqmap)
+            if hit:
+                이수.append(hit)
+                학점합 += 학점.get(name, 3.0)
+            else:
+                미이수.append(name)
+        총이수 += 학점합
+        out[구분] = {"필요학점": 필요, "이수학점": 학점합,
+                    "남은학점": max(0, 필요 - 학점합),
+                    "이수": 이수, "미이수": 미이수}
+    합계 = sum(DUAL_REQUIRED.values())
+    out["합계"] = {"필요학점": 합계, "이수학점": 총이수,
+                 "남은학점": max(0, 합계 - 총이수)}
+    out["졸업작품"] = "예체능·창의소프트학부 학과를 복수전공하면 졸업작품(시험) 이수 필요 — 학과 확인"
+    return out
+
+
 def diagnose_any(profile, eqmap=None):
     """하드코딩(검증됨) → 교과과정표 엑셀 → 수강편람 자동추출 순으로 폴백한다.
 

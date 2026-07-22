@@ -88,6 +88,12 @@ def parse_rule(text, known_orgs=None):
 
     lim["대상학년"] = sorted(years)
 
+    # '1~4학년'처럼 전 학년을 여는 문구가 따로 있으면, 함께 적힌 학과명은 '추가 안내'지
+    # '그 학과만'이 아니다. 예: '1~4학년 및 자유전공학부', '1~4학년,자유전공학부1'.
+    # 학과 제한으로 읽으면 나머지 학과를 전부 막는다 — 들을 수 있는 과목을 빼는 쪽이라 더 위험.
+    if lim["대상학과"] and re.search(r"1\s*~\s*4\s*학년", s):
+        lim["대상학과"] = []
+
     # 자격과 무관한 운영 안내뿐이면(조직·학번 정보가 전혀 없음) 제한 없음으로 되돌린다.
     if any(k in s for k in _NOT_A_LIMIT) and not (lim["대상학과"] or lim["제외조직"]
                                                   or lim["대상계열"] or lim["학번범위"]):
@@ -123,6 +129,24 @@ def _norm(s):
     """학과명 비교용 정규화 — 공백·중점·마침표 제거, 접미사(학과/학부/전공/과) 제거."""
     s = re.sub(r"[\s·.]", "", str(s))
     return re.sub(r"(학과|학부|전공|과)$", "", s)
+
+
+def _same_org(a, b):
+    """조직 지정(a)이 내 소속(b)에 해당하는가.
+
+    부분 문자열로 보면 안 된다 — '경영학부'가 '조리서비스경영학과'에, 'AI로봇학과'가
+    '국방AI로봇융합공학과'에 우연히 들어가 서로 다른 학과가 같다고 판정된다(80쌍 중 42쌍).
+    정규화 후 완전 일치이거나, 학부↔소속 전공처럼 **공백으로 나뉜 앞 토큰**이 같을 때만 인정한다
+    (예: '국제학부' ↔ '국제학부 영어영문학전공').
+    """
+    na, nb = _norm(a), _norm(b)
+    if na and na == nb:
+        return True
+    for x, y in ((a, b), (b, a)):
+        tok = str(x).split()
+        if len(tok) > 1 and _norm(tok[0]) == _norm(y):
+            return True
+    return False
 
 
 def _all_abbrev(names, known_depts=None):
@@ -183,21 +207,20 @@ def is_eligible(sec, profile, limits=None, known_depts=None):
     #      그쪽(아래 3번)이 진짜 기준이다. 예: 기독교와세계는 개설=기독교학과지만
     #      분반마다 '사회대1','공대1'처럼 수강 단과대가 지정돼 있다.
     if lim.get("타전공불가") and not lim["대상학과"]:
-        개설 = _norm(sec.get("개설학과") or "")
-        if 내학과 and 개설 and not (개설 in 내학과 or 내학과 in 개설):
+        개설 = sec.get("개설학과") or ""
+        if 내학과 and 개설 and not _same_org(개설, profile.get("학과", "")):
             return False, f"{sec.get('개설학과')} 전공생만 수강 가능"
     # 2) 제외 지정 — 내 학과/대학이 제외 목록에 걸리면 못 들음
     for x in lim["제외조직"]:
-        nx = _norm(x)
-        if 내학과 and nx and (nx in 내학과 or 내학과 in nx):
+        if 내학과 and _norm(x) and _same_org(x, profile.get("학과", "")):
             return False, f"{x} 제외 대상"
     # 3) 대상 학과 지정 — 계열이 함께 지정됐거나, 지정이 전부 단과대 약칭('공대','사회대')이면
     #    약칭↔학과 대응표가 없어 내 학과가 거기 속하는지 알 수 없다 → 막지 않는다(보수적).
     #    (이 가드가 없으면 컴퓨터공학과 학생이 '공대1' 분반까지 못 듣게 되는 과도 차단이 난다)
     if lim["대상학과"] and not lim["대상계열"] and not _all_abbrev(lim["대상학과"], known_depts):
-        # 양방향 부분일치 — 학과명이 바뀐 경우(데이터사이언스학과 → 인공지능데이터사이언스학과)를
-        # 다른 학과로 오인해 차단하지 않기 위함.
-        if 내학과 and not any(_norm(d) in 내학과 or 내학과 in _norm(d)
+        # 학부↔소속 전공만 같은 조직으로 인정한다(_same_org). 부분 문자열로 보면
+        # '국방AI로봇융합공학과' 학생이 'AI로봇학과1' 분반을 통과해 버린다.
+        if 내학과 and not any(_same_org(d, profile.get("학과", ""))
                             for d in lim["대상학과"] if _norm(d)):
             return False, f"{'·'.join(lim['대상학과'])} 대상 강좌"
     # 4) 학년 — 조직 지정이 전혀 없는 순수 학년 문구('2학년 수강과목')에만 적용한다.

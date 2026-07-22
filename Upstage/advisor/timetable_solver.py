@@ -203,11 +203,15 @@ def build_candidates(df, dept, 이수구분=("전공필수", "전공기초"), ta
     target_years: 예 (3,) 또는 (1,2,3) — 해당 학년 권장 과목만. None이면 전체.
     include_cyber: True면 시간 없는 사이버강좌(e-러닝/K-MOOC)도 후보에 포함
                    (시간 충돌 없이 학점을 채울 수 있음).
+    dept: None이면 학과를 안 따진다 — 교양선택처럼 전교 대상으로 열리는 과목용.
     """
     ycol = _year_col(df) #학년 뽑는 함수
 
-    #내 학과에서 전필/전기 과목의 행만 추출
-    sub = df[(df["개설학과전공"] == dept) & (df["이수구분"].isin(이수구분))].copy()
+    #내 학과에서 전필/전기 과목의 행만 추출 (dept=None이면 이수구분만 본다)
+    mask = df["이수구분"].isin(이수구분)
+    if dept is not None:
+        mask &= (df["개설학과전공"] == dept)
+    sub = df[mask].copy()
 
     
     has_time = sub["slots"].apply(len) > 0
@@ -391,6 +395,8 @@ def apply_section_filters(courses, profile, enroll_limits=None, known_depts=None
     - "차단시간": ["월 09:00~10:30", "화 18:00~21:00"] — 알바·학원 등 고정 일정,
                   기피 시간대(1교시 등)도 같은 방식으로 입력. 겹치는 분반 제외.
     - "제외과목": ["대학물리1", ...] — 안 들을 과목. 이름이 일치하는 과목은 통째로 제외.
+    - "대안제외과목": [...] — 2·3안을 만들려고 호출측이 뺀 과목. 동작은 제외과목과 같지만
+                      사용자가 지정한 게 아니므로 사유를 다르게 표시한다.
     - "영어강의제외": True — 강의언어에 '영어' 포함 분반 제외
       (P/NP 여부는 강의시간표에 없음 — 강의계획서 수집 후 지원 예정)
 
@@ -403,35 +409,45 @@ def apply_section_filters(courses, profile, enroll_limits=None, known_depts=None
     for s in profile.get("차단시간", []):
         blocks += parse_times(s)
     exclude = {n.strip() for n in profile.get("제외과목", []) if n.strip()}
+    alt_exclude = {n.strip() for n in profile.get("대안제외과목", []) if n.strip()}
     no_eng = bool(profile.get("영어강의제외"))
-    if not (off_days or blocks or exclude or no_eng or enroll_limits):
+    if not (off_days or blocks or exclude or alt_exclude or no_eng or enroll_limits):
         return courses, []
     kept, dropped = [], []
     for c in courses:
-        if str(c["교과목명"]).strip() in exclude:          # 사용자가 안 들겠다고 지정한 과목 → 통째 제외
+        name = str(c["교과목명"]).strip()
+        if name in exclude or name in alt_exclude:        # 안 들을 과목 → 통째 제외
             dropped.append({"교과목명": c["교과목명"], "이수구분": c["이수구분"],
-                            "사유": "사용자가 제외한 과목"})
+                            "사유": "사용자가 제외한 과목" if name in exclude
+                                  else "이 추천안에서는 뺀 과목"})
             continue
         secs = []
-        자격사유 = ""
+        자격사유 = ""      # 수강자격에 걸린 분반의 사유(첫 번째만 — 분반마다 달라 덮어쓰면 엉뚱해짐)
+        조건사유 = ""      # 자격은 통과했는데 사용자가 건 조건에 걸린 사유
         for s in c["sections"]:
             if enroll_limits:                          # 수강자격(타학과 대상·외국인 전용 등)
                 ok, why = eligibility.is_eligible(s, profile, enroll_limits, known_depts)
                 if not ok:
-                    자격사유 = why
+                    자격사유 = 자격사유 or why
                     continue
             if any(d in off_days for d, _s, _e in s["slots"]):
+                조건사유 = 조건사유 or "공강으로 지정한 요일 수업"
                 continue
             if any(slots_overlap(a, b) for a in s["slots"] for b in blocks):
+                조건사유 = 조건사유 or "차단한 시간대 수업"
                 continue
             if no_eng and "영어" in str(s.get("언어") or ""):
+                조건사유 = 조건사유 or "영어강의 제외 설정"
                 continue
             secs.append(s)
         if secs:
             kept.append({**c, "sections": secs})
         else:
+            # 자격을 통과한 분반이 하나라도 있었다면 사용자가 건 조건이 진짜 이유다.
+            # (자격사유를 먼저 쓰면 '내가 들을 수 있는 분반'이 왜 빠졌는지 알 수 없다)
             dropped.append({"교과목명": c["교과목명"], "이수구분": c["이수구분"],
-                            "사유": 자격사유 or "공강요일·차단시간·언어 조건에 맞는 분반 없음"})
+                            "사유": 조건사유 or 자격사유
+                                  or "공강요일·차단시간·언어 조건에 맞는 분반 없음"})
     return kept, dropped
 
 
@@ -809,11 +825,15 @@ def recommend_for_profile(profile, cur_xlsx, old_xlsx, rename_json,
                                 target_years=(현재학년,), include_cyber=include_cyber)
     pool = must + elective + list(extra_courses or [])
 
-    # 복수전공: 그 학과의 전공필수/기초를 후보에 합류
+    # 복수전공(부전공·융합전공 포함): 주전공과 같은 기준으로 후보에 합류.
+    # 전공선택도 포함해야 한다 — 융합전공은 개설 과목이 대부분 전공선택이라
+    # 전공필수/기초만 가져오면 후보가 0이 된다(예: 문화산업경영 융합전공 2학년).
     if profile.get("복수전공"):
         dm = build_candidates(df, profile["복수전공"], 이수구분=("전공필수", "전공기초"),
                               target_years=tuple(range(1, 현재학년 + 1)),
                               include_cyber=include_cyber)
+        dm += build_candidates(df, profile["복수전공"], 이수구분=("전공선택",),
+                               target_years=(현재학년,), include_cyber=include_cyber)
         for c in dm:
             c["트랙"] = "복수전공"
         pool += dm
@@ -916,7 +936,28 @@ def recommend_for_profile(profile, cur_xlsx, old_xlsx, rename_json,
             c.setdefault("트랙", "타학년")
         cands2, removed2, chosen2, dropped2 = _dedup_solve(pool + elective_all)
         if sum(c["credits"] for c in chosen2) > sum(c["credits"] for c in chosen):
+            pool = pool + elective_all
             cands, removed, chosen, dropped = cands2, removed2, chosen2, dropped2
+
+    # 그래도 모자라면 교양선택으로 잔여 학점을 채운다. 교양선택은 졸업'요건'이 아니라
+    # 졸업'학점'을 채우는 과목이라 요건 기반 후보에 안 들어간다 — 전공·교양필수를 다 이수한
+    # 고학년은 후보가 바닥나 목표학점을 못 채운다(예: 경제학과 4학년 10학점). 그 경우에만 연다.
+    #
+    # '요건을 끝냈다는 근거'를 함께 요구한다: 이수 기록이 있고(taken_names) 남은 요건 후보가
+    # 없을 때만. 학점이 모자라다는 이유만으로 열면, 개설이 적어서 모자란 학생에게도 교양선택을
+    # 안겨 전공 자리를 뺏는다(융합전공 1학년이 교양선택 6과목으로 18학점을 받던 문제).
+    # 우선순위는 PRIORITY 미등록이라 9 — 전공선택(5)보다 뒤라서 기존 결과를 밀어내지 않는다.
+    요건구분 = ("전공필수", "전공기초", "공통교양필수", "학문기초교양필수", "균형교양필수")
+    if (sum(c["credits"] for c in chosen) < target_credits - 2.5
+            and taken_names
+            and not any(c["이수구분"] in 요건구분 for c in cands)):
+        ge_elective = build_candidates(df, None, 이수구분=("교양선택",),
+                                       include_cyber=include_cyber)
+        for c in ge_elective:
+            c.setdefault("트랙", "잔여학점")
+        cands3, removed3, chosen3, dropped3 = _dedup_solve(pool + ge_elective)
+        if sum(c["credits"] for c in chosen3) > sum(c["credits"] for c in chosen):
+            cands, removed, chosen, dropped = cands3, removed3, chosen3, dropped3
     남은필수 = [c["교과목명"] for c in cands
              if c["이수구분"] in ("전공필수", "전공기초")]
     # 선수과목 미이수 경고 + 계획서 정보(평가·과제·팀플) 부착 (수집분 있을 때만)
